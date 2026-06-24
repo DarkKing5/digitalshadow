@@ -1,0 +1,417 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Digital Shadow — интерактивный пульт</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@400;500;600;700;800&family=Inter:wght@400;450;500;600&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:oklch(0.984 0.004 230);
+    --surface:oklch(1 0 0);
+    --surface-2:oklch(0.966 0.006 230);
+    --border:oklch(0.905 0.008 235);
+    --border-strong:oklch(0.84 0.012 235);
+    --ink:oklch(0.23 0.022 258);
+    --ink-2:oklch(0.39 0.02 258);
+    --muted:oklch(0.49 0.016 258);
+    --brand:oklch(0.45 0.10 248);
+    --accent:oklch(0.52 0.11 220);
+    --accent-deep:oklch(0.46 0.11 222);
+    --risk:oklch(0.55 0.20 25);
+    --ok:oklch(0.52 0.13 155);
+    --sans:'Inter','Segoe UI',system-ui,sans-serif;
+    --display:'Inter Tight','Segoe UI',system-ui,sans-serif;
+    --mono:'JetBrains Mono','Consolas',ui-monospace,monospace;
+    --ease:cubic-bezier(0.23,1,0.32,1);
+  }
+  *{margin:0;padding:0;box-sizing:border-box}
+  html,body{height:100%}
+  body{font-family:var(--sans);background:var(--bg);color:var(--ink);overflow:hidden;height:100vh;-webkit-font-smoothing:antialiased;font-feature-settings:"cv05","ss01"}
+  .mono{font-family:var(--mono);font-variant-numeric:tabular-nums}
+  a{color:inherit;text-decoration:none}
+
+  /* header */
+  header{height:60px;display:flex;align-items:center;gap:18px;padding:0 22px;border-bottom:1px solid var(--border);background:var(--surface);position:relative;z-index:5}
+  .logo{display:flex;align-items:center;gap:11px;font-family:var(--display);font-weight:700;font-size:16px;letter-spacing:-0.02em}
+  .mark{width:30px;height:30px;border-radius:8px;position:relative;flex:0 0 auto;background:radial-gradient(120% 120% at 30% 20%,var(--accent),var(--brand) 55%,oklch(0.34 0.085 252));box-shadow:0 6px 16px -7px oklch(0.45 0.10 248/.55),inset 0 1px 0 oklch(1 0 0/.3)}
+  .mark::after{content:"";position:absolute;inset:0;border-radius:8px;background:radial-gradient(circle at 50% 47%,transparent 30%,oklch(1 0 0/.85) 32%,transparent 34%),radial-gradient(circle at 50% 47%,oklch(1 0 0/.95) 0 12%,transparent 14%)}
+  .logo small{display:block;font-family:var(--mono);font-size:10px;color:var(--muted);letter-spacing:.04em;font-weight:400;margin-top:1px}
+  .stats{display:flex;gap:9px;margin-left:auto}
+  .stat{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:7px 14px;min-width:96px;text-align:center}
+  .stat .v{font-family:var(--display);font-size:19px;font-weight:800;line-height:1;font-variant-numeric:tabular-nums}
+  .stat .l{font-size:9.5px;letter-spacing:.5px;color:var(--muted);margin-top:4px;text-transform:uppercase}
+  .stat.scan .v{color:var(--accent-deep)}.stat.net .v{color:var(--brand)}.stat.risk .v{color:var(--risk)}
+  .back{font-size:13.5px;color:var(--ink-2);display:flex;align-items:center;gap:7px;padding:8px 13px;border:1px solid var(--border-strong);border-radius:9px;transition:.15s;font-weight:500}
+  .back:hover{border-color:var(--ink-2);background:var(--surface-2)}
+
+  /* layout */
+  .layout{display:grid;grid-template-columns:330px 1fr 350px;height:calc(100vh - 60px)}
+  .col{overflow:hidden;display:flex;flex-direction:column;min-height:0}
+  .col.left{border-right:1px solid var(--border)}
+  .col.right{border-left:1px solid var(--border);background:var(--surface)}
+  .col-head{padding:13px 16px 11px;font-size:11px;letter-spacing:1px;text-transform:uppercase;color:var(--muted);display:flex;align-items:center;gap:8px;border-bottom:1px solid var(--border);flex:0 0 auto}
+  .col-head b{color:var(--ink);font-weight:600}
+  .col-head .count{margin-left:auto;background:var(--surface-2);border:1px solid var(--border);border-radius:20px;padding:2px 9px;font-size:10px;color:var(--accent-deep);font-family:var(--mono)}
+
+  /* feed */
+  .feed{overflow-y:auto;padding:10px;flex:1 1 auto}
+  .card{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:12px 13px;margin-bottom:9px;cursor:pointer;transition:transform .15s var(--ease),border-color .15s,box-shadow .15s}
+  .card:hover{border-color:var(--border-strong);box-shadow:0 8px 20px -14px oklch(0.23 0.05 255/.4);transform:translateY(-1px)}
+  .card.active{border-color:var(--accent);box-shadow:0 0 0 1px var(--accent),0 10px 24px -16px oklch(0.45 0.10 248/.5)}
+  .card .top{display:flex;align-items:center;gap:8px;margin-bottom:7px}
+  .score{font-family:var(--display);font-weight:800;font-size:16px;min-width:28px;font-variant-numeric:tabular-nums}
+  .badge{font-size:9.5px;letter-spacing:.3px;padding:2px 8px;border-radius:6px;text-transform:uppercase;border:1px solid;font-weight:600;background:var(--surface)}
+  .src{font-size:10px;color:var(--muted);margin-left:auto;font-family:var(--mono)}
+  .card .title{font-size:13px;font-weight:650;margin-bottom:3px;line-height:1.3}
+  .card .desc{font-size:11.5px;color:var(--ink-2);line-height:1.45;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+  .card .tags{display:flex;flex-wrap:wrap;gap:4px;margin-top:8px}
+  .tag{font-size:9.5px;color:var(--accent-deep);background:oklch(0.52 0.11 220/.08);border:1px solid oklch(0.52 0.11 220/.22);border-radius:5px;padding:1px 7px}
+
+  /* graph */
+  .col.center{background:radial-gradient(800px 460px at 60% 38%,oklch(0.52 0.11 220/.045),transparent),var(--bg);position:relative}
+  .graph-bar{position:absolute;top:14px;left:14px;right:14px;z-index:4;display:flex;gap:8px;align-items:center;pointer-events:none}
+  .btn{pointer-events:auto;font-family:var(--sans);font-size:12.5px;font-weight:600;padding:9px 14px;border-radius:9px;cursor:pointer;border:1px solid var(--border-strong);background:var(--surface);color:var(--ink);transition:transform .15s var(--ease),border-color .15s,background .15s}
+  .btn:active{transform:scale(.97)}
+  .btn:hover{border-color:var(--accent);color:var(--accent-deep)}
+  .btn.primary{background:var(--brand);border-color:transparent;color:#fff;box-shadow:0 8px 22px -12px oklch(0.45 0.10 248/.7)}
+  .btn.primary:hover{background:oklch(0.38 0.095 250);color:#fff}
+  .hint{margin-left:auto;font-size:11px;color:var(--muted);font-family:var(--mono);pointer-events:none}
+  #svgwrap{position:absolute;inset:0;overflow:hidden;cursor:grab}
+  #svgwrap.grabbing{cursor:grabbing}
+  svg{width:100%;height:100%;display:block}
+  .edge{stroke:var(--border-strong);stroke-width:1.3;transition:opacity .2s}
+  .edge.leak{stroke:var(--risk);stroke-dasharray:5 4;stroke-width:1.5;opacity:.85}
+  .edge.hl{stroke:var(--accent);stroke-width:2;opacity:1}
+  .edge.dim{opacity:.12}
+  .node{cursor:pointer}
+  .node circle{transition:.15s;stroke:var(--surface);stroke-width:2.5}
+  .node text{font-size:10px;fill:var(--ink-2);pointer-events:none;font-family:var(--mono)}
+  .node.dim{opacity:.16}
+  .node.sel circle{stroke:var(--ink);stroke-width:3}
+  .node.sel text{fill:var(--ink);font-weight:600}
+  .legend{position:absolute;bottom:14px;left:14px;z-index:4;display:flex;flex-wrap:wrap;gap:5px 13px;max-width:520px;font-size:10.5px;color:var(--muted);font-family:var(--mono)}
+  .legend span{display:flex;align-items:center;gap:5px}
+  .legend i{width:9px;height:9px;border-radius:50%;display:inline-block}
+
+  /* right panel */
+  .rpanel{overflow-y:auto;flex:1 1 auto;padding:15px}
+  .empty{color:var(--muted);font-size:12.5px;text-align:center;padding:36px 16px;line-height:1.6}
+  .det-h{font-family:var(--display);font-size:16px;font-weight:700;margin-bottom:3px;line-height:1.25;letter-spacing:-0.02em}
+  .det-sub{font-size:10.5px;color:var(--muted);margin-bottom:12px;font-family:var(--mono)}
+  .pill{display:inline-block;font-size:10.5px;padding:3px 9px;border-radius:6px;margin:0 4px 4px 0;border:1px solid var(--border-strong);background:var(--surface)}
+  .raw{background:var(--surface-2);border:1px solid var(--border);border-radius:9px;padding:11px;font-size:11px;line-height:1.55;color:var(--ink-2);margin:10px 0;font-family:var(--mono);white-space:pre-wrap}
+  .kv{display:flex;font-size:11.5px;padding:6px 0;border-bottom:1px solid var(--border)}
+  .kv .k{color:var(--muted);width:92px;flex:0 0 auto}
+  .kv .vv{color:var(--ink);word-break:break-all}
+  .sec{font-size:10px;letter-spacing:1px;text-transform:uppercase;color:var(--accent-deep);margin:16px 0 8px;font-family:var(--mono);font-weight:500}
+  .scoreflag{font-family:var(--display);font-size:26px;font-weight:800;margin-bottom:2px;font-variant-numeric:tabular-nums}
+  textarea{width:100%;background:var(--surface);border:1px solid var(--border-strong);border-radius:9px;color:var(--ink);font-size:11.5px;padding:11px;font-family:var(--mono);resize:vertical;min-height:74px;line-height:1.5}
+  textarea:focus{outline:none;border-color:var(--accent)}
+  .chip{display:inline-flex;align-items:center;gap:5px;font-size:10.5px;background:var(--surface-2);border:1px solid var(--border);border-radius:7px;padding:4px 9px;margin:0 5px 5px 0}
+  .chip b{color:var(--accent-deep)}
+  .connlist .ci{font-size:11px;padding:7px 9px;border-radius:8px;background:var(--surface-2);border:1px solid var(--border);margin-bottom:5px;cursor:pointer;display:flex;gap:8px;align-items:center;transition:.15s}
+  .connlist .ci:hover{border-color:var(--accent)}
+  .note{border-radius:9px;padding:11px 13px;margin:10px 0;font-size:11.5px;line-height:1.5}
+  .note.red{background:oklch(0.55 0.20 25/.07);border:1px solid oklch(0.55 0.20 25/.25)}
+  .note.acc{background:oklch(0.52 0.11 220/.07);border:1px solid oklch(0.52 0.11 220/.22)}
+  .note b{color:var(--ink)}
+  ::-webkit-scrollbar{width:9px;height:9px}
+  ::-webkit-scrollbar-thumb{background:var(--border-strong);border-radius:5px}
+  ::-webkit-scrollbar-track{background:transparent}
+
+  @media (max-width:980px){.layout{grid-template-columns:1fr}.col.left,.col.right{display:none}}
+</style>
+</head>
+<body>
+<header>
+  <a href="index.html" class="logo"><span class="mark"></span><span>Digital Shadow<small>ИНТЕРАКТИВНЫЙ ПУЛЬТ · OSINT / DARKNET</small></span></a>
+  <div class="stats">
+    <div class="stat scan"><div class="v" id="st-scan">0</div><div class="l">Сигналов</div></div>
+    <div class="stat net"><div class="v" id="st-net">0</div><div class="l">Сетей</div></div>
+    <div class="stat risk"><div class="v" id="st-risk">0</div><div class="l">Высокий риск</div></div>
+  </div>
+  <a href="index.html" class="back">← На сайт</a>
+</header>
+
+<div class="layout">
+  <div class="col left">
+    <div class="col-head"><b>Очередь кейсов</b> · по риску <span class="count" id="feed-count">0</span></div>
+    <div class="feed" id="feed"></div>
+  </div>
+  <div class="col center">
+    <div class="graph-bar">
+      <button class="btn primary" id="case1">▶ Показать кейс №1</button>
+      <button class="btn" id="reset">Сбросить</button>
+      <div class="hint">тащи узлы · колесо — зум · фон — панорама</div>
+    </div>
+    <div id="svgwrap"><svg id="svg"></svg></div>
+    <div class="legend" id="legend"></div>
+  </div>
+  <div class="col right">
+    <div class="col-head"><b>Карточка</b> · разведсводка</div>
+    <div class="rpanel" id="rpanel"></div>
+  </div>
+</div>
+
+<script>
+const SIGNALS = [
+{"id":"sig-001","source":"telegram","source_name":"t.me/almaty_kladmen","raw_text":"🌿АЛМАТА🌿 мука/соль топчик качество 🔥 0.5 — 15к, 1г — 28к. Только клад, в руки НЕ работаем. ❄️ растворы есть. Бот @kladman_alm писать сюда","entities":{"product":"мефедрон","product_category":"drugs","slang_decoded":"Продажа мефедрона («мука»/«соль») в Алматы. 0.5г — 15 000 ₸, 1г — 28 000 ₸. «Только клад» = доставка закладкой. Контакт через бот @kladman_alm.","prices":[{"amount":15000,"currency":"KZT"},{"amount":28000,"currency":"KZT"}],"phones":["+77017734512"],"usernames":["@kladman_alm"],"wallets":[{"address":"TR7NHqjeKQxGTCi8q8ZY4pL8otSzgjLj6t","chain":"TRON"}],"cities":["Almaty"],"dead_drops":["43.2389,76.9451 (Ботсад)"]},"classification":{"is_illicit":true,"category":"drugs","confidence":0.97},"risk_score":96,"risk_factors":["кросс-платформенная личность","общий крипто-кошелёк","повтор телефона","ссылка на утечку ПДн РК","координаты закладки","совпадение стиля"]},
+{"id":"sig-002","source":"darknet","source_name":"kraken-forum.onion / alm_chemist","raw_text":"Тема: [ALM] опт меф, гидра-style клады. Работаю по Алматы давно, репутация есть. Минималка от 5г. Оплата только крипта TRC20. Стиль работы тот же что и в тележке.","entities":{"product":"мефедрон","product_category":"drugs","slang_decoded":"Тот же оператор продаёт мефедрон ОПТОМ на даркнет-форуме под алиасом «alm_chemist». Минимум 5г, оплата TRON/TRC20. Открыто признаёт параллельную работу в Telegram; стилометрия подтверждает того же автора, что @kladman_alm.","prices":[{"amount":110000,"currency":"KZT"}],"phones":["+77017734512"],"usernames":["alm_chemist","@kladman_alm"],"wallets":[{"address":"TR7NHqjeKQxGTCi8q8ZY4pL8otSzgjLj6t","chain":"TRON"}],"cities":["Almaty"],"dead_drops":[]},"classification":{"is_illicit":true,"category":"drugs","confidence":0.95},"risk_score":94,"risk_factors":["кросс-платформенная личность","общий крипто-кошелёк","повтор телефона","совпадение стиля","высокий оборот"]},
+{"id":"sig-003","source":"telegram","source_name":"t.me/almaty_kladmen","raw_text":"❗️Набор курьеров-кладменов по Алмате. Оплата 15-25к за смену, выводим на Kaspi сразу. Залог 50к. Писать @kladman_alm, паспорт НЕ нужен — пробьём по базе сами 😉","entities":{"product":"вербовка курьеров","product_category":"money_mule","slang_decoded":"Набор курьеров-закладчиков в Алматы, оплата на Kaspi. Фраза «паспорт НЕ нужен — пробьём по базе сами» = ссылка на использование утёкшей базы ПДн для проверки рекрутов.","prices":[{"amount":25000,"currency":"KZT"}],"phones":["+77017734512"],"usernames":["@kladman_alm"],"wallets":[],"cities":["Almaty"],"dead_drops":[]},"classification":{"is_illicit":true,"category":"money_mule","confidence":0.9},"risk_score":88,"risk_factors":["вербовка / рост сети","ссылка на утечку ПДн РК","повтор телефона","кросс-платформенная личность","совпадение стиля"]},
+{"id":"sig-004","source":"leak_forum","source_name":"breachbazaar.cc / KZ_TELECOM_2026","raw_text":"DUMP: KZ mobile subscriber base 2026 — 4.1M rows. ИИН + ФИО + номер + город. Full base 0.4 BTC or TRC20 USDT. Отлично для таргета по РК.","entities":{"product":"утёкшая база абонентов телеком РК","product_category":"pii_leak","slang_decoded":"Продажа утёкшей базы абонентов связи РК: ~4.1 млн записей с ИИН, ФИО, телефоном, городом. Цена 0.4 BTC. ЭТО та база, на которую ссылается операция kladman_alm.","prices":[{"amount":0.4,"currency":"BTC"}],"phones":[],"usernames":["breach_seller_kz"],"wallets":[{"address":"TXk9pQ2vN8rZ4mLwY6sB1cD3eF5gH7jK9","chain":"TRON"}],"cities":["Almaty","Astana","Shymkent"],"dead_drops":[]},"classification":{"is_illicit":true,"category":"pii_leak","confidence":0.93},"risk_score":91,"risk_factors":["ссылка на утечку ПДн РК","высокий оборот","общий крипто-кошелёк"]},
+{"id":"sig-005","source":"marketplace","source_name":"Telegram Mini App @AlmStuffShop","raw_text":"Прайс ✅ Меф 1г 28к | гашиш 1г 9к | бошки 1г 11к. Оплата: USDT TRC20 на TR7NH…Lj6t или Kaspi. Доставка — клад. Только по рекомендации.","entities":{"product":"мефедрон, гашиш, каннабис","product_category":"drugs","slang_decoded":"Прайс Telegram-магазина: меф 28к, гашиш 9к, бошки 11к. Оплата на ТОТ ЖЕ TRON-кошелёк TR7NH…Lj6t, что sig-001/002. Общий кошелёк связывает витрину с оператором kladman_alm.","prices":[{"amount":28000,"currency":"KZT"}],"phones":["+77017734512"],"usernames":["@AlmStuffShop"],"wallets":[{"address":"TR7NHqjeKQxGTCi8q8ZY4pL8otSzgjLj6t","chain":"TRON"}],"cities":["Almaty"],"dead_drops":["43.2401,76.9112 (Парк Ганди)"]},"classification":{"is_illicit":true,"category":"drugs","confidence":0.94},"risk_score":90,"risk_factors":["общий крипто-кошелёк","повтор телефона","координаты закладки","кросс-платформенная личность","высокий оборот"]},
+{"id":"sig-006","source":"darknet","source_name":"kraken-forum.onion / escrow","raw_text":"Escrow закрыт ✅ alm_chemist ↔ buyer. 5г меф, TRC20 TR7NH…Lj6t. Депозит разблокирован, репа +1.","entities":{"product":"мефедрон (escrow)","product_category":"drugs","slang_decoded":"Запись escrow-сделки: алиас «alm_chemist» закрыл продажу 5г мефедрона, оплата на TRON-кошелёк TR7NH…Lj6t (общий кошелёк кластера). Подтверждает, что кошелёк активно проводит наркосделки.","prices":[{"amount":110000,"currency":"KZT"}],"phones":[],"usernames":["alm_chemist"],"wallets":[{"address":"TR7NHqjeKQxGTCi8q8ZY4pL8otSzgjLj6t","chain":"TRON"}],"cities":["Almaty"],"dead_drops":[]},"classification":{"is_illicit":true,"category":"drugs","confidence":0.92},"risk_score":87,"risk_factors":["общий крипто-кошелёк","кросс-платформенная личность","высокий оборот","совпадение стиля"]},
+{"id":"sig-007","source":"telegram","source_name":"t.me/vape_astana_24","raw_text":"ЭЛЕКТРОНКИ оптом 💨 Эльфы 20000 тяг — 5500тг. Без акциза, привоз из ОАЭ. Школьникам скидка 🤫 Доставка по Астане.","entities":{"product":"вейпы (контрабанда)","product_category":"vapes","slang_decoded":"Контрабандные вейпы в Астане. «Без акциза» = без марки (контрабанда из ОАЭ). «Школьникам скидка» = таргет на несовершеннолетних.","prices":[{"amount":5500,"currency":"KZT"}],"phones":["+77051120934"],"usernames":["@vape_astana_24"],"wallets":[],"cities":["Astana"],"dead_drops":[]},"classification":{"is_illicit":true,"category":"vapes","confidence":0.88},"risk_score":46,"risk_factors":["таргет на несовершеннолетних","высокий оборот"]},
+{"id":"sig-008","source":"telegram","source_name":"t.me/elfbar_shym","raw_text":"💨 ВЕЙПЫ Шымкент 💨 любой вкус, опт от 50шт. Возле школ не палимся, передаём аккуратно.","entities":{"product":"вейпы (контрабанда)","product_category":"vapes","slang_decoded":"Контрабандный вейп-реселлер в Шымкенте, опт от 50 шт. «Возле школ не палимся» — таргет на несовершеннолетних.","prices":[],"phones":["+77471009823"],"usernames":["@elfbar_shym"],"wallets":[],"cities":["Shymkent"],"dead_drops":[]},"classification":{"is_illicit":true,"category":"vapes","confidence":0.82},"risk_score":42,"risk_factors":["таргет на несовершеннолетних","высокий оборот"]},
+{"id":"sig-009","source":"telegram","source_name":"t.me/alco_almaty_night","raw_text":"🍾 АЛКО 24/7 Алматы 🍾 после 21:00 без проблем. Привезём за 30 мин. Левый коньяк армянский тоже есть 😉","entities":{"product":"ночной алкоголь + контрафакт","product_category":"alcohol","slang_decoded":"Нелегальная доставка алкоголя после 21:00 (продажа ограничена). «Левый коньяк армянский» = контрафакт.","prices":[],"phones":["+77019988231"],"usernames":["@alco_almaty_night"],"wallets":[],"cities":["Almaty"],"dead_drops":[]},"classification":{"is_illicit":true,"category":"alcohol","confidence":0.85},"risk_score":38,"risk_factors":["высокий оборот"]},
+{"id":"sig-010","source":"telegram","source_name":"t.me/alco24_astana","raw_text":"Ночной магазин 🌙 Астана. Спирт пищевой канистра 5л — 9000тг, разбавляй сам. Самогон тоже есть.","entities":{"product":"суррогатный спирт","product_category":"alcohol","slang_decoded":"Ночная торговля нелегальным алкоголем в Астане: нерегулируемый пищевой спирт 5л за 9000₸ («разбавляй сам» — опасный суррогат) и самогон.","prices":[{"amount":9000,"currency":"KZT"}],"phones":["+77024451276"],"usernames":["@alco24_astana"],"wallets":[],"cities":["Astana"],"dead_drops":[]},"classification":{"is_illicit":true,"category":"alcohol","confidence":0.8},"risk_score":40,"risk_factors":["высокий оборот"]},
+{"id":"sig-011","source":"marketplace","source_name":"Instagram @lux.copy.almaty","raw_text":"Люкс копии 1:1 👜 Louis Vuitton, Gucci, Rolex. Сумки от 35к, часы от 60к. Чек и коробка в комплекте. Kaspi рассрочка.","entities":{"product":"контрафакт люкс","product_category":"counterfeit","slang_decoded":"Контрафактные люкс-товары — поддельные LV, Gucci, Rolex с фейковыми чеками. Доставка по РК через Kaspi.","prices":[{"amount":35000,"currency":"KZT"}],"phones":["+77072234109"],"usernames":["@lux.copy.almaty"],"wallets":[],"cities":["Almaty"],"dead_drops":[]},"classification":{"is_illicit":true,"category":"counterfeit","confidence":0.86},"risk_score":34,"risk_factors":["высокий оборот"]},
+{"id":"sig-012","source":"marketplace","source_name":"t.me/replica_kicks_kz","raw_text":"Реплики кроссовок ААА 👟 Nike, Adidas, NB. 1:1 батч, фото-видео перед отправкой. Чек брендовый прилагаем.","entities":{"product":"контрафакт кроссовки","product_category":"counterfeit","slang_decoded":"Реселлер контрафактных кроссовок: «AAA 1:1 батч» с поддельными чеками. Опт для реселлеров.","prices":[],"phones":["+77783345091"],"usernames":["@replica_kicks_kz"],"wallets":[],"cities":["Almaty"],"dead_drops":[]},"classification":{"is_illicit":true,"category":"counterfeit","confidence":0.81},"risk_score":30,"risk_factors":["высокий оборот"]},
+{"id":"sig-013","source":"telegram","source_name":"t.me/work_kaspi_drop","raw_text":"💸 РАБОТА. Нужны люди с картами Kaspi/Halyk. Обнал, дроп. 10% с оборота сразу тебе. Карта твоя — деньги наши.","entities":{"product":"вербовка дропов","product_category":"money_mule","slang_decoded":"Вербовка дропов («обнал/дроп»): нужны карты Kaspi/Halyk для приёма нелегальных платежей. Дроп оставляет 10%. Классическая схема дроповода.","prices":[],"phones":["+77013398871"],"usernames":["@drop_manager_kz"],"wallets":[],"cities":["Almaty","Astana"],"dead_drops":[]},"classification":{"is_illicit":true,"category":"money_mule","confidence":0.91},"risk_score":64,"risk_factors":["вербовка / рост сети","высокий оборот","передача контакта"]},
+{"id":"sig-014","source":"telegram","source_name":"t.me/obnal_kz_team","raw_text":"Обнал крипты 🔁 USDT→Kaspi, Kaspi→USDT. Дропов набираем постоянно. Кошель для приёма TXk9p…7jK9.","entities":{"product":"обнал крипты","product_category":"money_mule","slang_decoded":"Сервис отмывания крипты: USDT↔Kaspi, постоянный набор дропов. Кошелёк приёма TXk9p…7jK9 — ТОТ ЖЕ кошелёк, что продаёт утёкшую телеком-базу (sig-004).","prices":[],"phones":["+77016655402"],"usernames":["@obnal_kz_team"],"wallets":[{"address":"TXk9pQ2vN8rZ4mLwY6sB1cD3eF5gH7jK9","chain":"TRON"}],"cities":["Almaty"],"dead_drops":[]},"classification":{"is_illicit":true,"category":"money_mule","confidence":0.89},"risk_score":68,"risk_factors":["вербовка / рост сети","общий крипто-кошелёк","высокий оборот"]},
+{"id":"sig-015","source":"telegram","source_name":"t.me/karaganda_klad","raw_text":"Караганда 🟢 в наличии: меф, скорость, экстази 🍬 клады по городу. Только бтк/usdt.","entities":{"product":"мефедрон, амфетамин, MDMA","product_category":"drugs","slang_decoded":"Магазин закладок в Караганде: мефедрон, амфетамин («скорость»), MDMA. Оплата BTC/USDT. Отдельный оператор (другой город, кошелёк).","prices":[],"phones":[],"usernames":["@karaganda_klad_bot"],"wallets":[{"address":"T9yLpWv3nB7kQ2mZ8rD4sF6gH1jK5cN0x","chain":"TRON"}],"cities":["Karaganda"],"dead_drops":["49.8047,73.1094"]},"classification":{"is_illicit":true,"category":"drugs","confidence":0.93},"risk_score":65,"risk_factors":["координаты закладки","высокий оборот","передача контакта"]},
+{"id":"sig-016","source":"telegram","source_name":"t.me/420_shymkent","raw_text":"🍁 Шымкент 🍁 трава, бошки топ. Клад/прикоп. 1г — 6000, 5г — 25000. usdt трц20.","entities":{"product":"каннабис","product_category":"drugs","slang_decoded":"Продажа каннабиса закладками в Шымкенте. «Клад/прикоп» = закопанная закладка, оплата USDT TRC20.","prices":[{"amount":6000,"currency":"KZT"}],"phones":[],"usernames":["@shym420_bot"],"wallets":[{"address":"TBn4kR8wL2xV6yP9qS3dF7gH0jM5cT1zA","chain":"TRON"}],"cities":["Shymkent"],"dead_drops":["42.3174,69.5901"]},"classification":{"is_illicit":true,"category":"drugs","confidence":0.9},"risk_score":58,"risk_factors":["координаты закладки","высокий оборот"]},
+{"id":"sig-017","source":"darknet","source_name":"kraken-forum.onion / oruzhie_kz","raw_text":"Травматы переделанные под боевой, ПМ, ТТ. Глушак на заказ. Регион Алматы/Астана. Связь через сессию.","entities":{"product":"нелегальное оружие","product_category":"weapons","slang_decoded":"Нелегальное оружие: травматы под боевой, Макаров (ПМ), Токарев (ТТ), глушители на заказ. Связь через Session.","prices":[],"phones":[],"usernames":["oruzhie_kz"],"wallets":[{"address":"TLm2nV8cX4kP6wR9qY3sB1dF5gH7jZ0aQ","chain":"TRON"}],"cities":["Almaty","Astana"],"dead_drops":[]},"classification":{"is_illicit":true,"category":"weapons","confidence":0.92},"risk_score":72,"risk_factors":["передача контакта","высокий оборот"]},
+{"id":"sig-018","source":"leak_forum","source_name":"breachbazaar.cc / KZ_BANK_CARDS","raw_text":"Свежий вал KZ — карты Kaspi/Halyk с балансом, CVV. 200 штук. Под заказ пробью любого по ИИН.","entities":{"product":"краденые данные карт РК","product_category":"pii_leak","slang_decoded":"Продажа краденых данных карт РК — 200 карт Kaspi/Halyk с балансом и CVV. Продавец также предлагает «пробив» по ИИН.","prices":[],"phones":[],"usernames":["breach_seller_kz"],"wallets":[{"address":"TXk9pQ2vN8rZ4mLwY6sB1cD3eF5gH7jK9","chain":"TRON"}],"cities":["Almaty","Astana"],"dead_drops":[]},"classification":{"is_illicit":true,"category":"pii_leak","confidence":0.9},"risk_score":74,"risk_factors":["ссылка на утечку ПДн РК","общий крипто-кошелёк","высокий оборот"]},
+{"id":"sig-019","source":"telegram","source_name":"t.me/probiv_kz_service","raw_text":"ПРОБИВ РК 🔎 ИИН, авто, прописка, детализация звонков, баланс Kaspi. Базы свежие, телеком 2026 в наличии.","entities":{"product":"пробив / доксинг","product_category":"pii_leak","slang_decoded":"Нелегальный сервис «пробива» по РК. Рекламирует базу «телеком 2026» — ТУ ЖЕ утёкшую базу из sig-004, подтверждая, что утечка в активном обороте.","prices":[],"phones":["+77087712340"],"usernames":["@probiv_kz_bot"],"wallets":[],"cities":["Almaty","Astana","Shymkent"],"dead_drops":[]},"classification":{"is_illicit":true,"category":"pii_leak","confidence":0.88},"risk_score":70,"risk_factors":["ссылка на утечку ПДн РК","высокий оборот","передача контакта"]},
+{"id":"sig-020","source":"telegram","source_name":"t.me/astana_klad_24","raw_text":"Астана ❄️ соль/меф/амф. Клады спрятаны, фото+описание. Оплата крипта. Работаем ночью.","entities":{"product":"мефедрон, амфетамин","product_category":"drugs","slang_decoded":"Магазин закладок в Астане: меф/амфетамин («соль/меф/амф»), оплата криптой. Отдельный оператор.","prices":[],"phones":[],"usernames":["@astana_klad_bot"],"wallets":[{"address":"TQp7sH3vM9xL5kW2yR8dB4fG6jN1cZ0aT","chain":"TRON"}],"cities":["Astana"],"dead_drops":["51.1605,71.4704"]},"classification":{"is_illicit":true,"category":"drugs","confidence":0.91},"risk_score":60,"risk_factors":["координаты закладки","высокий оборот","передача контакта"]},
+{"id":"sig-021","source":"marketplace","source_name":"t.me/cigs_opt_kz","raw_text":"Сигареты БЕЗ АКЦИЗА оптом 🚬 блок от 2500тг. Дубай/Беларусь привоз. Фура раз в неделю.","entities":{"product":"контрабандные сигареты","product_category":"counterfeit","slang_decoded":"Контрабандные сигареты без акциза оптом из Дубая/Беларуси, блок от 2500₸. Уход от акциза.","prices":[{"amount":2500,"currency":"KZT"}],"phones":["+77019901145"],"usernames":["@cigs_opt_kz"],"wallets":[],"cities":["Almaty","Astana"],"dead_drops":[]},"classification":{"is_illicit":true,"category":"counterfeit","confidence":0.84},"risk_score":36,"risk_factors":["высокий оборот"]},
+{"id":"sig-022","source":"darknet","source_name":"kraken-forum.onion / gas_almaty","raw_text":"Закись азота (веселящий газ) баллоны 🎈 опт. Для вечеринок. Также есть споры/грибы под заказ. Крипта.","entities":{"product":"закись азота + псилоцибин","product_category":"drugs","slang_decoded":"Продажа закиси азота оптом «для вечеринок» плюс псилоцибиновые споры/грибы под заказ. Отдельный оператор.","prices":[],"phones":[],"usernames":["gas_almaty"],"wallets":[{"address":"TFh6kP2wN8xR4yL9qV3sD7gB1cM5jZ0aE","chain":"TRON"}],"cities":["Almaty"],"dead_drops":[]},"classification":{"is_illicit":true,"category":"drugs","confidence":0.83},"risk_score":52,"risk_factors":["высокий оборот","передача контакта"]},
+{"id":"sig-023","source":"telegram","source_name":"t.me/almatyflowers_club (прикрытие)","raw_text":"🌸 Букеты под заказ 🌸 'роза красная' 0.5 — 15, 'белая роза' 1г — 28. Доставка по координатам 🌷 каталог в боте @kladman_alm","entities":{"product":"мефедрон (прикрытие «цветы»)","product_category":"drugs","slang_decoded":"Канал-прикрытие «цветочный магазин»: «красная роза 0.5 — 15(к)», «белая роза 1г — 28(к)» = закодированный прайс мефедрона, идентичный sig-001. Клиентов уводят в ТОТ ЖЕ бот @kladman_alm — прямая связь с Кластером ALPHA.","prices":[{"amount":15000,"currency":"KZT"}],"phones":[],"usernames":["@kladman_alm"],"wallets":[{"address":"TR7NHqjeKQxGTCi8q8ZY4pL8otSzgjLj6t","chain":"TRON"}],"cities":["Almaty"],"dead_drops":["43.2200,76.8512 (Парк Первого Президента)"]},"classification":{"is_illicit":true,"category":"drugs","confidence":0.9},"risk_score":86,"risk_factors":["кросс-платформенная личность","общий крипто-кошелёк","координаты закладки","совпадение стиля"]},
+{"id":"sig-024","source":"marketplace","source_name":"OLX-доска / kz-meds","raw_text":"Прегабалин, трамадол, без рецепта 💊 упаковками. Самовывоз Алматы или почта по РК. Рецепт не спрашиваем.","entities":{"product":"рецептурные препараты без рецепта","product_category":"drugs","slang_decoded":"Продажа рецептурных препаратов (прегабалин «Лирика», трамадол) без рецепта. Нелегальный оборот контролируемых лекарств.","prices":[],"phones":["+77756613398"],"usernames":["@meds_kz_seller"],"wallets":[],"cities":["Almaty"],"dead_drops":[]},"classification":{"is_illicit":true,"category":"drugs","confidence":0.85},"risk_score":50,"risk_factors":["высокий оборот"]}
+];
+
+const CAT = {
+  drugs:{ic:"💊",ru:"Наркотики",col:"#c2384a"},
+  pii_leak:{ic:"🗄️",ru:"Утечка ПДн",col:"#c2410c"},
+  money_mule:{ic:"💸",ru:"Дропы/обнал",col:"#a16207"},
+  weapons:{ic:"🔫",ru:"Оружие",col:"#be185d"},
+  vapes:{ic:"💨",ru:"Вейпы",col:"#2563eb"},
+  alcohol:{ic:"🍾",ru:"Алкоголь",col:"#7c3aed"},
+  counterfeit:{ic:"🏷️",ru:"Контрафакт",col:"#0f766e"}
+};
+const NTYPE = {
+  listing:{col:"#64748b",ru:"Сигнал"},
+  username:{col:"#0e8a9b",ru:"Аккаунт"},
+  wallet:{col:"#b7791f",ru:"Крипто-кошелёк"},
+  phone:{col:"#7c3aed",ru:"Телефон"},
+  city:{col:"#5b7a8a",ru:"Город"}
+};
+function riskClass(r){return r>=80?"red":r>=55?"amber":"green"}
+function riskCol(r){return r>=80?"#c2384a":r>=55?"#b07000":"#2f8a5b"}
+
+function uname(u){return u.replace(/^@/,'').toLowerCase()}
+function buildGraph(sigs){
+  const nodes=new Map(), edges=[];
+  const add=(id,label,type,risk,extra)=>{
+    let n=nodes.get(id);
+    if(n){n.risk=Math.max(n.risk,risk||0); if(extra)Object.assign(n,extra); return n;}
+    n={id,label,type,risk:risk||0,sigs:[]}; if(extra)Object.assign(n,extra);
+    nodes.set(id,n); return n;
+  };
+  sigs.forEach(s=>{
+    const sid='sig:'+s.id;
+    const sn=add(sid,s.id.toUpperCase(),'listing',s.risk_score,{cat:s.entities.product_category,signal:s});
+    (s.entities.usernames||[]).forEach(u=>{const id='user:'+uname(u);const n=add(id,u,'username',s.risk_score);n.sigs.push(s.id);edges.push({source:sid,target:id,relation:'posted'});});
+    (s.entities.wallets||[]).forEach(w=>{const id='wallet:'+w.address;const n=add(id,w.chain+' '+w.address.slice(0,5)+'…'+w.address.slice(-4),'wallet',s.risk_score);n.sigs.push(s.id);edges.push({source:sid,target:id,relation:'same_wallet'});});
+    (s.entities.phones||[]).forEach(p=>{const id='phone:'+p;const n=add(id,p,'phone',s.risk_score);n.sigs.push(s.id);edges.push({source:sid,target:id,relation:'same_phone'});});
+    (s.entities.cities||[]).forEach(c=>{const id='city:'+c.toLowerCase();const n=add(id,c,'city',0);n.sigs.push(s.id);edges.push({source:sid,target:id,relation:'located'});});
+  });
+  sigs.forEach(s=>{ if(s.id!=='sig-004' && (s.risk_factors||[]).some(f=>f.includes('утечку ПДн'))) edges.push({source:'sig:'+s.id,target:'sig:sig-004',relation:'references_leak',leak:true}); });
+  return {nodes:[...nodes.values()],edges};
+}
+function clusters(sigs){
+  const parent={}; const find=x=>parent[x]===x?x:(parent[x]=find(parent[x])); const union=(a,b)=>{parent[find(a)]=find(b)};
+  sigs.forEach(s=>parent[s.id]=s.id);
+  const key={};
+  sigs.forEach(s=>{
+    const ids=[].concat((s.entities.wallets||[]).map(w=>'w:'+w.address)).concat((s.entities.phones||[]).map(p=>'p:'+p)).concat((s.entities.usernames||[]).map(u=>'u:'+uname(u)));
+    ids.forEach(k=>{ if(key[k])union(s.id,key[k]); else key[k]=s.id; });
+  });
+  const groups={}; sigs.forEach(s=>{const r=find(s.id);(groups[r]=groups[r]||[]).push(s.id)});
+  return Object.values(groups).filter(g=>g.length>1);
+}
+
+const G=buildGraph(SIGNALS); const NODE={}; G.nodes.forEach(n=>NODE[n.id]=n);
+const CLUSTERS=clusters(SIGNALS);
+let selected=null, highlight=null;
+
+document.getElementById('st-scan').textContent=SIGNALS.length;
+document.getElementById('st-net').textContent=CLUSTERS.length;
+document.getElementById('st-risk').textContent=SIGNALS.filter(s=>s.risk_score>=80).length;
+document.getElementById('feed-count').textContent=SIGNALS.length;
+
+const feed=document.getElementById('feed');
+function renderFeed(){
+  const sorted=[...SIGNALS].sort((a,b)=>b.risk_score-a.risk_score);
+  feed.innerHTML=sorted.map(s=>{
+    const c=CAT[s.entities.product_category]||{ic:"❓",ru:"?",col:"#888"};
+    const tags=(s.risk_factors||[]).slice(0,3).map(f=>`<span class="tag">${f}</span>`).join('');
+    return `<div class="card" data-id="${s.id}">
+      <div class="top">
+        <span class="score" style="color:${riskCol(s.risk_score)}">${s.risk_score}</span>
+        <span class="badge" style="color:${c.col};border-color:${c.col}55">${c.ic} ${c.ru}</span>
+        <span class="src">${s.entities.cities[0]||'—'} · ${s.source}</span>
+      </div>
+      <div class="title">${s.entities.product}</div>
+      <div class="desc">${s.entities.slang_decoded}</div>
+      <div class="tags">${tags}</div>
+    </div>`;
+  }).join('');
+  feed.querySelectorAll('.card').forEach(el=>el.onclick=()=>selectSignal(el.dataset.id,true));
+}
+
+const W=1180,H=860;
+function layout(){
+  const ns=G.nodes;
+  ns.forEach((n,i)=>{const a=i*2.399; n.x=W/2+Math.cos(a)*(60+i*9%320); n.y=H/2+Math.sin(a)*(60+i*7%240); n.vx=0;n.vy=0;});
+  for(let t=0;t<420;t++){
+    for(let i=0;i<ns.length;i++)for(let j=i+1;j<ns.length;j++){let dx=ns[i].x-ns[j].x,dy=ns[i].y-ns[j].y,d2=dx*dx+dy*dy+.01,d=Math.sqrt(d2),f=2600/d2,fx=f*dx/d,fy=f*dy/d;ns[i].vx+=fx;ns[i].vy+=fy;ns[j].vx-=fx;ns[j].vy-=fy;}
+    G.edges.forEach(e=>{let a=NODE[e.source],b=NODE[e.target];if(!a||!b)return;let dx=b.x-a.x,dy=b.y-a.y,d=Math.sqrt(dx*dx+dy*dy)+.01,f=(d-96)*.018,fx=f*dx/d,fy=f*dy/d;a.vx+=fx;a.vy+=fy;b.vx-=fx;b.vy-=fy;});
+    ns.forEach(n=>{n.vx+=(W/2-n.x)*.0022;n.vy+=(H/2-n.y)*.0022;n.x+=Math.max(-9,Math.min(9,n.vx));n.y+=Math.max(-9,Math.min(9,n.vy));n.vx*=.86;n.vy*=.86;n.x=Math.max(34,Math.min(W-34,n.x));n.y=Math.max(34,Math.min(H-34,n.y));});
+  }
+}
+layout();
+const ADJ={}; G.nodes.forEach(n=>ADJ[n.id]=new Set());
+G.edges.forEach(e=>{if(ADJ[e.source]&&ADJ[e.target]){ADJ[e.source].add(e.target);ADJ[e.target].add(e.source);}});
+
+const svg=document.getElementById('svg'), wrap=document.getElementById('svgwrap');
+let view={x:0,y:0,k:1};
+function applyView(){svg.setAttribute('viewBox',`${view.x} ${view.y} ${W/view.k} ${H/view.k}`);}
+svg.setAttribute('viewBox',`0 0 ${W} ${H}`);
+function nodeRadius(n){if(n.type==='listing')return 7+(n.risk/100)*9;if(n.type==='wallet')return 11;if(n.type==='city')return 7;return 9;}
+function escapeHtml(t){return t.replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]))}
+function render(){
+  const hl=highlight; let s='';
+  G.edges.forEach(e=>{const a=NODE[e.source],b=NODE[e.target];if(!a||!b)return;let cls='edge'+(e.leak?' leak':'');if(hl){cls+=(hl.has(e.source)&&hl.has(e.target))?' hl':' dim';}s+=`<line class="${cls}" x1="${a.x}" y1="${a.y}" x2="${b.x}" y2="${b.y}"></line>`;});
+  G.nodes.forEach(n=>{
+    const r=nodeRadius(n);
+    let col=n.type==='listing'?riskCol(n.risk):(NTYPE[n.type]?.col||'#888');
+    let cls='node'; if(hl&&!hl.has(n.id))cls+=' dim'; if(selected===n.id)cls+=' sel';
+    const showLabel=n.type!=='listing'||n.risk>=70||(hl&&hl.has(n.id));
+    const lbl=showLabel?`<text x="${n.x+r+3}" y="${n.y+3}">${escapeHtml(n.label)}</text>`:'';
+    const glow=(n.type==='wallet')?`filter:drop-shadow(0 0 5px ${col}88)`:'';
+    s+=`<g class="${cls}" data-id="${n.id}"><circle cx="${n.x}" cy="${n.y}" r="${r}" fill="${col}" style="${glow}"></circle>${lbl}</g>`;
+  });
+  svg.innerHTML=s;
+  svg.querySelectorAll('.node').forEach(g=>{g.addEventListener('mousedown',startDragNode);g.addEventListener('click',()=>{if(!dragMoved)onNodeClick(g.dataset.id);});});
+}
+function neighborhood(id){const set=new Set([id]);(ADJ[id]||[]).forEach(x=>set.add(x));return set;}
+function onNodeClick(id){const n=NODE[id];if(!n)return;selected=id;highlight=neighborhood(id);if(n.type==='listing'){renderSignalDetail(n.signal);syncFeed(n.signal.id);}else renderEntityDetail(n);render();}
+function selectSignal(sigId){const id='sig:'+sigId;selected=id;highlight=neighborhood(id);renderSignalDetail(NODE[id].signal);syncFeed(sigId);render();focusNode(NODE[id]);}
+function syncFeed(sigId){feed.querySelectorAll('.card').forEach(el=>el.classList.toggle('active',el.dataset.id===sigId));const a=feed.querySelector(`.card[data-id="${sigId}"]`);if(a)a.scrollIntoView({block:'nearest',behavior:'smooth'});}
+function focusNode(n){view.k=1.5;view.x=n.x-(W/view.k)/2;view.y=n.y-(H/view.k)/2;applyView();}
+
+const rpanel=document.getElementById('rpanel');
+const decoderHTML=()=>`<div class="sec">🧠 Живой декодер</div><div><textarea id="dec-in" placeholder="Вставь закодированное объявление…"></textarea><button class="btn primary" id="dec-go" style="margin-top:8px;width:100%">Расшифровать →</button><div id="dec-out"></div></div>`;
+function bindDecoder(){const go=document.getElementById('dec-go');if(go)go.onclick=runDecode;}
+function renderSignalDetail(s){
+  const c=CAT[s.entities.product_category]||{ic:"❓",ru:"?"}; const rc=riskClass(s.risk_score); const e=s.entities;
+  const kv=(k,v)=>v&&v.length?`<div class="kv"><div class="k">${k}</div><div class="vv">${v}</div></div>`:'';
+  const cluster=CLUSTERS.find(g=>g.includes(s.id));
+  const clusterNote=cluster&&cluster.length>1?`<div class="note red">🕸️ <b>Часть выявленной сети</b> из ${cluster.length} сигналов — связаны общим кошельком / телефоном / алиасом. <span style="color:var(--accent-deep);cursor:pointer;font-weight:600" id="showcluster">Показать всю сеть →</span></div>`:'';
+  rpanel.innerHTML=`<div class="scoreflag" style="color:${riskCol(s.risk_score)}">${s.risk_score}<span style="font-size:12px;color:var(--muted);font-weight:500"> / 100 риск</span></div>
+    <div class="det-h">${c.ic} ${s.entities.product}</div>
+    <div class="det-sub">${s.id.toUpperCase()} · ${s.source_name} · ${(s.timestamp||'').slice(0,10)}</div>
+    <span class="pill" style="border-color:${riskCol(s.risk_score)};color:${riskCol(s.risk_score)}">${c.ru}</span>
+    <span class="pill">conf ${Math.round(s.classification.confidence*100)}%</span>
+    ${clusterNote}
+    <div class="sec">Сырой текст</div><div class="raw">${escapeHtml(s.raw_text)}</div>
+    <div class="sec">Расшифровка ИИ</div><div style="font-size:12px;line-height:1.55">${s.entities.slang_decoded}</div>
+    <div class="sec">Извлечённые сущности</div>
+    ${kv('Кошельки',e.wallets.map(w=>`<span style="color:#9a6700">${w.chain} ${w.address}</span>`).join('<br>'))}
+    ${kv('Телефоны',e.phones.join(', '))}${kv('Аккаунты',e.usernames.join(', '))}${kv('Города',e.cities.join(', '))}
+    ${kv('Цены',e.prices.map(p=>p.amount+' '+p.currency).join(' · '))}${kv('Закладки',e.dead_drops.join('<br>'))}
+    <div class="sec">Риск-факторы</div><div>${(s.risk_factors||[]).map(f=>`<span class="pill" style="color:#9a6700">${f}</span>`).join('')}</div>
+    ${decoderHTML()}`;
+  const sc=document.getElementById('showcluster'); if(sc)sc.onclick=()=>showCluster(s.id); bindDecoder();
+}
+function renderEntityDetail(n){
+  const t=NTYPE[n.type]||{ru:'Сущность',col:'#888'};
+  const conn=(n.sigs||[]).map(id=>SIGNALS.find(s=>s.id===id)).filter(Boolean);
+  rpanel.innerHTML=`<div class="det-h" style="color:${t.col}">${n.label}</div><div class="det-sub">${t.ru} · риск узла ${n.risk}</div>
+    ${conn.length>1?`<div class="note acc">🔗 Этот идентификатор связывает <b>${conn.length}</b> сигнала(ов) — кросс-платформенный мост.</div>`:''}
+    <div class="sec">Связанные сигналы (${conn.length})</div>
+    <div class="connlist">${conn.sort((a,b)=>b.risk_score-a.risk_score).map(s=>{const c=CAT[s.entities.product_category]||{ic:'❓'};return `<div class="ci" data-id="${s.id}"><span class="score" style="font-size:13px;color:${riskCol(s.risk_score)}">${s.risk_score}</span><span>${c.ic} ${s.entities.product}</span><span style="margin-left:auto;color:var(--muted);font-size:10px">${s.source}</span></div>`;}).join('')}</div>
+    ${decoderHTML()}`;
+  rpanel.querySelectorAll('.ci').forEach(el=>el.onclick=()=>selectSignal(el.dataset.id)); bindDecoder();
+}
+function showCluster(seedSigId){
+  const cluster=CLUSTERS.find(g=>g.includes(seedSigId))||[seedSigId];
+  const set=new Set(), sigs=[];
+  cluster.forEach(id=>{const sn=NODE['sig:'+id];if(!sn)return;set.add('sig:'+id);sigs.push(sn.signal);
+    (sn.signal.entities.usernames||[]).forEach(u=>set.add('user:'+uname(u)));
+    (sn.signal.entities.wallets||[]).forEach(w=>set.add('wallet:'+w.address));
+    (sn.signal.entities.phones||[]).forEach(p=>set.add('phone:'+p));});
+  if(sigs.some(s=>(s.risk_factors||[]).some(f=>f.includes('утечку')))) set.add('sig:sig-004');
+  highlight=set; selected='sig:'+seedSigId; render();
+  const pts=[...set].map(id=>NODE[id]).filter(Boolean);
+  const minx=Math.min(...pts.map(n=>n.x))-55,maxx=Math.max(...pts.map(n=>n.x))+55,miny=Math.min(...pts.map(n=>n.y))-55,maxy=Math.max(...pts.map(n=>n.y))+55;
+  const w=Math.max(150,maxx-minx),h=Math.max(150,maxy-miny);
+  view.k=Math.max(.6,Math.min(2.4,Math.min(W/w,H/h))); view.x=minx-(W/view.k-w)/2; view.y=miny-(H/view.k-h)/2; applyView();
+  const wallets=new Set(),phones=new Set(),aliases=new Set(),cities=new Set(); let leak=false,maxr=0;
+  sigs.forEach(s=>{s.entities.wallets.forEach(w=>wallets.add(w.address));s.entities.phones.forEach(p=>phones.add(p));s.entities.usernames.forEach(u=>aliases.add(u));s.entities.cities.forEach(c=>cities.add(c));if((s.risk_factors||[]).some(f=>f.includes('утечку')))leak=true;maxr=Math.max(maxr,s.risk_score);});
+  rpanel.innerHTML=`<div class="scoreflag" style="color:${riskCol(maxr)}">${maxr}<span style="font-size:12px;color:var(--muted);font-weight:500"> / 100 · КЕЙС</span></div>
+    <div class="det-h">🕸️ Организованная сеть · ${cities.size>1?[...cities].join('/'):[...cities][0]}</div>
+    <div class="det-sub">${sigs.length} связанных сигналов на ${new Set(sigs.map(s=>s.source)).size} площадках</div>
+    <div class="note red">Один оператор под <b>${aliases.size}</b> масками, связан <b>общим крипто-кошельком</b> и <b>телефоном</b> через Telegram, даркнет-форум и канал-прикрытие.${leak?' Использует <b>утёкшую базу ПДн РК</b> для таргетинга.':''}</div>
+    <div class="sec">Финансовый след</div>${[...wallets].map(w=>`<div class="kv"><div class="k">💰 кошелёк</div><div class="vv" style="color:#9a6700">${w}</div></div>`).join('')}
+    <div class="sec">Идентификаторы-мосты</div>${[...phones].map(p=>`<span class="pill" style="color:#7c3aed">📞 ${p}</span>`).join('')}${[...aliases].map(a=>`<span class="pill" style="color:#0e8a9b">${a}</span>`).join('')}
+    <div class="sec">Сигналы сети</div><div class="connlist">${sigs.sort((a,b)=>b.risk_score-a.risk_score).map(s=>{const c=CAT[s.entities.product_category]||{ic:'❓'};return `<div class="ci" data-id="${s.id}"><span class="score" style="font-size:13px;color:${riskCol(s.risk_score)}">${s.risk_score}</span><span>${c.ic} ${s.source_name}</span></div>`;}).join('')}</div>
+    ${decoderHTML()}`;
+  rpanel.querySelectorAll('.ci').forEach(el=>el.onclick=()=>selectSignal(el.dataset.id)); bindDecoder();
+}
+
+const SLANG=[
+  [/(меф|мяу|мука|соль|кристал|скорост|амф|фен|альфа)/i,'drugs','синтетические наркотики (мефедрон/амфетамин)'],
+  [/(шишк|бошк|трав|гашиш|план|каннаб|марихуан|042?0)/i,'drugs','каннабис'],
+  [/(экстаз|мдма|колес|таблы)/i,'drugs','MDMA/экстази'],
+  [/(клад|прикоп|закладк|тайник)/i,'drugs','доставка закладкой (dead-drop)'],
+  [/(дроп|обнал|залив|кэшаут|вывод нал)/i,'money_mule','дропы / отмывание денег'],
+  [/(вейп|электронк|эльф|elf|под|жижа)/i,'vapes','вейпы / электронные сигареты'],
+  [/(пробив|иин|база|детализац|прозвон|дамп|leak|слив)/i,'pii_leak','утечка ПДн / пробив'],
+  [/(ствол|пистолет|\bпм\b|\bтт\b|травмат|глушак|патрон|оружи)/i,'weapons','оружие'],
+  [/(без акциз|контрабанд|левый|реплик|копи[яи] 1:1|подделк|фальсиф)/i,'counterfeit','контрафакт / контрабанда'],
+  [/(спирт|самогон|водк|коньяк|алко|виски)/i,'alcohol','нелегальный алкоголь']
+];
+const CITIES=['Алмат','Алмата','Astana','Астана','Шымкент','Караганд','Актобе','Тараз','Павлодар','Атырау','Костанай','Усть-Камен','Семей','Актау','Уральск'];
+function runDecode(){
+  const t=(document.getElementById('dec-in').value||'').trim(); const out=document.getElementById('dec-out');
+  if(!t){out.innerHTML='<div style="color:var(--muted);font-size:11px;margin-top:8px">Вставь текст объявления выше.</div>';return;}
+  const wallets=[...t.matchAll(/\bT[1-9A-HJ-NP-Za-km-z]{33}\b/g)].map(m=>['TRON',m[0]]).concat([...t.matchAll(/\b(?:bc1|[13])[a-zA-HJ-NP-Z0-9]{25,39}\b/g)].map(m=>['BTC',m[0]])).concat([...t.matchAll(/\b0x[a-fA-F0-9]{40}\b/g)].map(m=>['ETH',m[0]]));
+  const phones=[...t.matchAll(/\+?7\d{10}/g)].map(m=>m[0]);
+  const users=[...t.matchAll(/@[A-Za-z0-9_]{3,}/g)].map(m=>m[0]);
+  const prices=[...t.matchAll(/(\d[\d\s]{0,7})\s*(к|k|тыс|тг|₸|тенге)/gi)].map(m=>{let n=parseFloat(m[1].replace(/\s/g,''));if(/к|k|тыс/i.test(m[2]))n*=1000;return Math.round(n);});
+  const cities=CITIES.filter(c=>new RegExp(c,'i').test(t)).map(c=>c.replace(/Алмат\b/,'Алматы').replace('Алмата','Алматы').replace('Astana','Астана').replace('Караганд','Караганда').replace('Усть-Камен','Усть-Каменогорск'));
+  let cat=null,prod=[]; SLANG.forEach(([re,c,label])=>{if(re.test(t)){if(!cat)cat=c;prod.push(label);}});
+  const dead=/(клад|прикоп|координат|тайник)/i.test(t), minors=/(школьник|школ|подрост|несовершен)/i.test(t);
+  const c=CAT[cat]||{ic:'❓',ru:'не определено',col:'#888'};
+  const risk=Math.min(99,(cat==='drugs'||cat==='weapons'||cat==='pii_leak'?70:cat==='money_mule'?55:35)+(wallets.length?12:0)+(dead?8:0)+(minors?6:0)+(phones.length&&users.length?4:0));
+  const chip=(l,v)=>v?`<div class="chip"><b>${l}</b> ${v}</div>`:'';
+  out.innerHTML=`<div style="margin-top:12px;display:flex;align-items:center;gap:8px"><span class="score" style="font-size:18px;color:${riskCol(risk)}">${risk}</span><span class="badge" style="border-color:${c.col}55;color:${c.col}">${c.ic} ${c.ru}</span><span style="font-size:10px;color:var(--ok);margin-left:auto">✓ локально</span></div>
+    <div style="font-size:11.5px;color:var(--ink-2);margin:8px 0;line-height:1.5">${prod.length?('Распознано: <b style="color:var(--ink)">'+[...new Set(prod)].join(', ')+'</b>. '):''}${dead?'Способ — закладка. ':''}${minors?'⚠️ таргет на несовершеннолетних. ':''}</div>
+    <div>${chip('💰',wallets.map(w=>w[0]+' '+w[1].slice(0,6)+'…'+w[1].slice(-4)).join(' '))}${chip('📞',phones.join(' '))}${chip('👤',users.join(' '))}${chip('🏙️',[...new Set(cities)].join(' '))}${chip('💵',prices.length?[...new Set(prices)].map(p=>p.toLocaleString('ru')+'₸').join(' / '):'')}</div>
+    ${wallets.length?`<div style="font-size:10.5px;color:#9a6700;margin-top:8px;line-height:1.5">↳ кошелёк добавлен в граф «следуй за деньгами» — проверяется пересечение с известными кластерами.</div>`:''}`;
+}
+
+let dragNode=null,dragMoved=false,panning=false,panStart=null;
+function svgPt(ev){const r=svg.getBoundingClientRect();return{x:view.x+(ev.clientX-r.left)/r.width*(W/view.k),y:view.y+(ev.clientY-r.top)/r.height*(H/view.k)};}
+function startDragNode(ev){ev.stopPropagation();dragMoved=false;dragNode=NODE[ev.currentTarget.dataset.id];}
+wrap.addEventListener('mousedown',ev=>{if(!dragNode){panning=true;wrap.classList.add('grabbing');panStart={x:ev.clientX,y:ev.clientY,vx:view.x,vy:view.y};}});
+window.addEventListener('mousemove',ev=>{if(dragNode){const p=svgPt(ev);dragNode.x=p.x;dragNode.y=p.y;dragMoved=true;render();}else if(panning){const r=svg.getBoundingClientRect();view.x=panStart.vx-(ev.clientX-panStart.x)/r.width*(W/view.k);view.y=panStart.vy-(ev.clientY-panStart.y)/r.height*(H/view.k);applyView();}});
+window.addEventListener('mouseup',()=>{dragNode=null;panning=false;wrap.classList.remove('grabbing');setTimeout(()=>dragMoved=false,30);});
+wrap.addEventListener('wheel',ev=>{ev.preventDefault();const f=ev.deltaY<0?1.12:0.89;const p=svgPt(ev);view.k=Math.max(.5,Math.min(3,view.k*f));view.x=p.x-(p.x-view.x)/f;view.y=p.y-(p.y-view.y)/f;applyView();},{passive:false});
+
+document.getElementById('legend').innerHTML=Object.entries(NTYPE).map(([k,v])=>`<span><i style="background:${v.col}"></i>${v.ru}</span>`).join('')+`<span><i style="background:#c2384a"></i>высокий риск</span><span style="color:var(--risk)">— — ссылка на утечку</span>`;
+document.getElementById('case1').onclick=()=>showCluster('sig-001');
+document.getElementById('reset').onclick=()=>{selected=null;highlight=null;view={x:0,y:0,k:1};applyView();render();rpanel.innerHTML=`<div class="empty">Выбери кейс слева или узел на графе.<br><br>Снизу — <b style="color:var(--accent-deep)">живой декодер</b>: вставь сырое объявление, система разберёт сленг.</div>`+decoderHTML();bindDecoder();};
+
+renderFeed(); render();
+rpanel.innerHTML=`<div class="empty">Выбери кейс слева или узел на графе.<br><br>Снизу — <b style="color:var(--accent-deep)">живой декодер</b>: вставь сырое объявление, система разберёт сленг.</div>`+decoderHTML();
+bindDecoder();
+</script>
+</body>
+</html>
