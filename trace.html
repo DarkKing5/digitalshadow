@@ -177,7 +177,6 @@ const CHAIN = {"source":"mempool.space","addresses":[
 ],"flows":[
 {"from":"3DYpxePiKWdbc4oQk2LCozJhcKdhFJmUXu","to":"12t9YDPgwueZ9NyMgw519p7AA8isjr6SMw","btc":0.0299,"n":1,"txid":"d40b61165201ec062caedac58bbbd39558b2f85d4e2e110e47d59b282b78fd1c"},
 {"from":"3QCCex1EuvvrhgBFr2ma88nsc3aNSaZkk1","to":"12t9YDPgwueZ9NyMgw519p7AA8isjr6SMw","btc":0.0291,"n":1,"txid":"17e92f3c10407e48c6d140757cec59014fa392e70037030d1b1baddec9cca087"},
-{"from":"12t9YDPgwueZ9NyMgw519p7AA8isjr6SMw","to":"1M1CfXLynR6vqbjwTqSiiLRVDQZEXHHJbb","btc":10.058,"n":1,"txid":"8def6458a46234ab0e040602e7852ff5cf58650f3f1102803b1d4bca4cc293a1","_synthlink":true},
 {"from":"13AM4VW2dhxYgXeQepoHkHSQuy6NgaEb94","to":"1M1CfXLynR6vqbjwTqSiiLRVDQZEXHHJbb","btc":10.058,"n":1,"txid":"8def6458a46234ab0e040602e7852ff5cf58650f3f1102803b1d4bca4cc293a1"},
 {"from":"13AM4VW2dhxYgXeQepoHkHSQuy6NgaEb94","to":"1H68h8qsVkMUgY8khcdFpbHV22cCnC74dk","btc":9.5629,"n":1,"txid":"a028bb2d4c795cb8a8fd2f03285934fba8747fa84296fb7711dcda179b21cc4c"},
 {"from":"1KHiXdgRzPrSU1bRpQGoLGagso4PgB2Hr8","to":"13AM4VW2dhxYgXeQepoHkHSQuy6NgaEb94","btc":0.3361,"n":1,"txid":"83d215732d2d7ba18df658de0db6adf52704fe8545c4434c6f826d8d4751b455"},
@@ -192,18 +191,17 @@ const CHAIN = {"source":"mempool.space","addresses":[
 {"from":"1AjZPMsnmpdK2Rv9KQNfMurTXinscVro9V","to":"1HHWeEBcQvBXaik57z2V6rGWPHDGqczYFH","btc":4,"n":1,"txid":"bd1772c5596f44ecf1ab130050c9f92b7c9de9a3ada6c6761246373efdcaa3e1"},
 {"from":"149w62rY42aZBox8fGcmqNsXUzSStKeq8C","to":"3Q4pxs9svsqMryUGFv2rkHGvRvnzQRYjAx","btc":0.7122,"n":1,"txid":"81a5bb1a51860d4b73fe0d3852dae03e21eddf5ea83c7a59da70680f6e8d79d7"},
 {"from":"149w62rY42aZBox8fGcmqNsXUzSStKeq8C","to":"3GRdiEiWcYNR35DoqRJWDCdyPktXmAS4aK","btc":0.635,"n":1,"txid":"846ad07b82b3b60c449d4f5e2df234f0e85f90b21e74dc7551d0d11a7f002073"},
-{"from":"33cwHrq48AqKZ5NLsYYfHo8PxdovuUiFWx","to":"149w62rY42aZBox8fGcmqNsXUzSStKeq8C","btc":0.5,"n":1,"txid":"74677c38ceed3fe30ad5fac7b32496d371fbe07d360a4ef7a7c6e3c8dfbb89cc"},
-{"from":"1AjZPMsnmpdK2Rv9KQNfMurTXinscVro9V","to":"149w62rY42aZBox8fGcmqNsXUzSStKeq8C","btc":1.2,"n":2,"txid":"5ec1c77ac820030aa643a602cd7829214c8422959d2ad6df730ad5e7f32973ff","_bridge":true}
+{"from":"33cwHrq48AqKZ5NLsYYfHo8PxdovuUiFWx","to":"149w62rY42aZBox8fGcmqNsXUzSStKeq8C","btc":0.5,"n":1,"txid":"74677c38ceed3fe30ad5fac7b32496d371fbe07d360a4ef7a7c6e3c8dfbb89cc"}
 ]};
 
 // ============ ИИ-СВОДКИ (сгенерированы аналитическим ИИ Digital Shadow) ============
 const BRIEFS = {
 "12t9YDPgwueZ9NyMgw519p7AA8isjr6SMw":"Кошелёк сбора выкупов кампании <b>WannaCry</b> (май 2017, ~300 000 заражённых машин в 150 странах). Паттерн на цепи: <b>десятки мелких входящих по 0.001–0.03 BTC</b> — выкупы от жертв; затем средства концентрируются и уходят крупными исходящими на адреса-консолидаторы для отмывания. Атрибутируется группе <b>Lazarus</b> (КНДР). Классический ransomware-cashout: «много жертв → один кошелёк → вывод».",
-"13AM4VW2dhxYgXeQepoHkHSQuy6NgaEb94":"Второй из трёх жёстко закодированных кошельков <b>WannaCry</b>. Получил ~20 BTC выкупов, вывел <b>10.06 BTC одной транзакцией</b> на адрес-консолидатор <span class='mono'>1M1CfX…</span>, общий с первым кошельком кампании — то есть три «разных» адреса сходятся в одну точку отмывания. Это и есть кросс-кошельковая кластеризация: разные входы → один владелец.",
+"13AM4VW2dhxYgXeQepoHkHSQuy6NgaEb94":"Второй из трёх жёстко закодированных кошельков <b>WannaCry</b>. Получил ~20 BTC выкупов, вывел <b>10.06 BTC одной транзакцией</b> на адрес-консолидатор <span class='mono'>1M1CfX…</span> для отмывания. Поведение идентично двум другим кошелькам кампании (те же суммы выкупа, тайминги) — кросс-кошельковая кластеризация по паттерну: разные адреса → один оператор.",
 "115p7UMMngoj1pMvkpHijcRdfJNXj6LrLn":"Третий кошелёк <b>WannaCry</b>. ~14.9 BTC выкупов, два крупных вывода по ~7 BTC. Совокупно по трём кошелькам кампании прошло <b>~55 BTC</b>. Поведение идентично двум другим (одинаковые суммы выкупа, тайминги) — стилометрия операций подтверждает единого оператора.",
 "bc1qxu83k5qkj8kcqdqqenwzn7khcw4llfykeqwg45":"Кошелёк выкупа <b>Colonial Pipeline</b> (май 2021, группа <b>DarkSide</b>). Получил <b>63.75 BTC</b> выкупа, консолидировал входящие (66.5 BTC) и вывел <b>63.7 BTC</b> на адрес <span class='mono'>3EYkx…</span> — <b>именно эти средства позже изъяло ФБР</b>. Живое доказательство тезиса: «анонимная» крипта прозрачна и прослеживается до изъятия.",
 "1AjZPMsnmpdK2Rv9KQNfMurTXinscVro9V":"⚠️ <b>Под санкциями OFAC</b> (SDN, ноябрь 2018) — один из <b>первых крипто-адресов в истории санкционных списков</b>. Кошелёк <b>SamSam ransomware</b>, операторы — иранские граждане. Оборот ~1791 BTC. Любая операция с этим адресом = автоматическое нарушение санкций; для финмониторинга это мгновенный red-flag.",
-"149w62rY42aZBox8fGcmqNsXUzSStKeq8C":"⚠️ <b>Под санкциями OFAC</b> (SDN, ноябрь 2018). Второй кошелёк <b>SamSam</b> — оборот <b>~10 637 BTC</b> и <b>6232 транзакции</b>. Связан с первым санкционным адресом прямым переводом — то есть санкционный риск «перетекает» по цепочке. Демонстрирует, зачем нужен граф: помечен один — подсвечивается вся связанная сеть."
+"149w62rY42aZBox8fGcmqNsXUzSStKeq8C":"⚠️ <b>Под санкциями OFAC</b> (SDN, ноябрь 2018). Второй кошелёк <b>SamSam</b> — оборот <b>~10 637 BTC</b> и <b>6232 транзакции</b>. Та же кампания, что и первый санкционный адрес: санкционный риск распространяется на всю связанную инфраструктуру. Демонстрирует, зачем нужен граф: помечен один — под подозрением вся сеть."
 };
 
 // watchlist для живого трейсинга (санкционные/illicit адреса)
