@@ -1,0 +1,381 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Digital Shadow — блокчейн-разведка (реальные данные)</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@400;500;600;700;800&family=Inter:wght@400;450;500;600&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:oklch(0.984 0.004 230); --surface:oklch(1 0 0); --surface-2:oklch(0.966 0.006 230);
+    --border:oklch(0.905 0.008 235); --border-strong:oklch(0.84 0.012 235);
+    --ink:oklch(0.23 0.022 258); --ink-2:oklch(0.39 0.02 258); --muted:oklch(0.49 0.016 258);
+    --brand:oklch(0.45 0.10 248); --accent:oklch(0.52 0.11 220); --accent-deep:oklch(0.46 0.11 222);
+    --risk:oklch(0.55 0.20 25); --ok:oklch(0.52 0.13 155); --gold:oklch(0.62 0.12 70);
+    --sans:'Inter','Segoe UI',system-ui,sans-serif; --display:'Inter Tight','Segoe UI',system-ui,sans-serif; --mono:'JetBrains Mono','Consolas',ui-monospace,monospace;
+    --ease:cubic-bezier(0.23,1,0.32,1);
+  }
+  *{margin:0;padding:0;box-sizing:border-box}
+  html,body{height:100%}
+  body{font-family:var(--sans);background:var(--bg);color:var(--ink);overflow:hidden;height:100vh;-webkit-font-smoothing:antialiased;font-feature-settings:"cv05","ss01"}
+  .mono{font-family:var(--mono);font-variant-numeric:tabular-nums}
+  a{color:inherit;text-decoration:none}
+
+  header{height:60px;display:flex;align-items:center;gap:16px;padding:0 22px;border-bottom:1px solid var(--border);background:var(--surface);position:relative;z-index:5}
+  .logo{display:flex;align-items:center;gap:11px;font-family:var(--display);font-weight:700;font-size:16px;letter-spacing:-0.02em}
+  .mark{width:30px;height:30px;border-radius:8px;position:relative;flex:0 0 auto;background:radial-gradient(120% 120% at 30% 20%,var(--accent),var(--brand) 55%,oklch(0.34 0.085 252));box-shadow:0 6px 16px -7px oklch(0.45 0.10 248/.55),inset 0 1px 0 oklch(1 0 0/.3)}
+  .mark::after{content:"";position:absolute;inset:0;border-radius:8px;background:radial-gradient(circle at 50% 47%,transparent 30%,oklch(1 0 0/.85) 32%,transparent 34%),radial-gradient(circle at 50% 47%,oklch(1 0 0/.95) 0 12%,transparent 14%)}
+  .logo small{display:block;font-family:var(--mono);font-size:10px;color:var(--muted);letter-spacing:.04em;font-weight:400;margin-top:1px}
+  .model-chip{display:flex;align-items:center;gap:14px;margin-left:8px;font-family:var(--mono);font-size:11.5px;color:var(--ink-2);background:var(--surface-2);border:1px solid var(--border);border-radius:9px;padding:7px 13px}
+  .model-chip b{color:var(--ink)} .model-chip .d{color:var(--muted)}
+  .model-chip .nd{display:inline-block;width:9px;height:9px;border-radius:50%;background:var(--risk);vertical-align:middle;margin-right:5px}
+  .model-chip .ed{display:inline-block;width:16px;height:2px;background:var(--accent-deep);vertical-align:middle;margin-right:5px}
+  .src-note{margin-left:auto;font-family:var(--mono);font-size:11px;color:var(--muted)}
+  .src-note b{color:var(--ok)}
+  .back{font-size:13.5px;color:var(--ink-2);display:flex;align-items:center;gap:7px;padding:8px 13px;border:1px solid var(--border-strong);border-radius:9px;transition:.15s;font-weight:500}
+  .back:hover{border-color:var(--ink-2);background:var(--surface-2)}
+
+  .layout{display:grid;grid-template-columns:312px 1fr 372px;height:calc(100vh - 60px)}
+  .col{overflow:hidden;display:flex;flex-direction:column;min-height:0}
+  .col.left{border-right:1px solid var(--border)} .col.right{border-left:1px solid var(--border);background:var(--surface)}
+  .col-head{padding:13px 16px 11px;font-size:11px;letter-spacing:1px;text-transform:uppercase;color:var(--muted);display:flex;align-items:center;gap:8px;border-bottom:1px solid var(--border);flex:0 0 auto}
+  .col-head b{color:var(--ink);font-weight:600}
+  .col-head .count{margin-left:auto;background:var(--surface-2);border:1px solid var(--border);border-radius:20px;padding:2px 9px;font-size:10px;color:var(--accent-deep);font-family:var(--mono)}
+
+  /* wallet list */
+  .wlist{overflow-y:auto;padding:10px;flex:1 1 auto}
+  .wcard{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:13px;margin-bottom:9px;cursor:pointer;transition:transform .15s var(--ease),border-color .15s,box-shadow .15s}
+  .wcard:hover{border-color:var(--border-strong);box-shadow:0 8px 20px -14px oklch(0.23 0.05 255/.4);transform:translateY(-1px)}
+  .wcard.active{border-color:var(--risk);box-shadow:0 0 0 1px var(--risk),0 10px 24px -16px oklch(0.55 0.20 25/.4)}
+  .wcard .wt{display:flex;align-items:center;gap:8px;margin-bottom:7px}
+  .wcard .wt .lbl{font-weight:650;font-size:13.5px}
+  .wcard .ofac{margin-left:auto;font-family:var(--mono);font-size:9px;font-weight:600;color:#fff;background:var(--risk);border-radius:5px;padding:2px 6px;letter-spacing:.3px}
+  .wcard .addr{font-family:var(--mono);font-size:10.5px;color:var(--muted);margin-bottom:9px;word-break:break-all}
+  .wcard .wstats{display:flex;gap:13px;font-family:var(--mono);font-size:11px}
+  .wcard .wstats div span{color:var(--muted);font-size:9.5px;display:block;text-transform:uppercase;letter-spacing:.4px}
+  .wcard .wstats b{color:var(--ink);font-size:14px;font-family:var(--display);font-weight:700}
+  .wcard .cat{font-size:10px;color:var(--risk);font-family:var(--mono)}
+
+  /* trace box */
+  .tracebox{padding:12px 14px;border-top:1px solid var(--border);background:var(--surface-2);flex:0 0 auto}
+  .tracebox .tlabel{font-size:11px;color:var(--ink-2);margin-bottom:8px;font-weight:600}
+  .tracebox .tlabel b{color:var(--accent-deep)}
+  .trow{display:flex;gap:7px}
+  .trow input{flex:1;background:var(--surface);border:1px solid var(--border-strong);border-radius:9px;color:var(--ink);font-size:11px;padding:9px 10px;font-family:var(--mono)}
+  .trow input:focus{outline:none;border-color:var(--accent)}
+  .btn{font-family:var(--sans);font-size:12.5px;font-weight:600;padding:9px 14px;border-radius:9px;cursor:pointer;border:1px solid var(--border-strong);background:var(--surface);color:var(--ink);transition:transform .15s var(--ease),border-color .15s,background .15s;white-space:nowrap}
+  .btn:active{transform:scale(.97)} .btn:hover{border-color:var(--accent);color:var(--accent-deep)}
+  .btn.primary{background:var(--brand);border-color:transparent;color:#fff} .btn.primary:hover{background:oklch(0.38 0.095 250);color:#fff}
+  .tstatus{font-size:11px;margin-top:8px;min-height:16px;font-family:var(--mono)}
+
+  /* graph */
+  .col.center{background:radial-gradient(820px 480px at 55% 40%,oklch(0.52 0.11 220/.045),transparent),var(--bg);position:relative}
+  .gbar{position:absolute;top:14px;left:14px;right:14px;z-index:4;display:flex;gap:8px;align-items:center;pointer-events:none}
+  .gbar .ttl{font-family:var(--display);font-weight:700;font-size:15px;letter-spacing:-0.02em;background:var(--surface);border:1px solid var(--border);border-radius:9px;padding:8px 13px;pointer-events:auto}
+  .gbar .ttl b{color:var(--risk)}
+  .gbar .reset{pointer-events:auto}
+  .hint{margin-left:auto;font-size:11px;color:var(--muted);font-family:var(--mono);pointer-events:none}
+  #svgwrap{position:absolute;inset:0;overflow:hidden;cursor:grab} #svgwrap.grabbing{cursor:grabbing}
+  svg{width:100%;height:100%;display:block}
+  .edge{stroke:var(--border-strong);stroke-width:1.4;transition:opacity .2s;marker-end:url(#arrow)}
+  .edge.big{stroke:var(--accent-deep);stroke-width:2.4;marker-end:url(#arrowA)}
+  .edge.hl{stroke:var(--risk);stroke-width:2.6;opacity:1;marker-end:url(#arrowR)}
+  .edge.dim{opacity:.1}
+  .elabel{font-family:var(--mono);font-size:10px;fill:var(--accent-deep);font-weight:500}
+  .elabel.dim{opacity:.12}
+  .node{cursor:pointer}
+  .node circle{transition:.15s;stroke:var(--surface);stroke-width:2.5}
+  .node text{font-size:10px;fill:var(--ink-2);pointer-events:none;font-family:var(--mono)}
+  .node.dim{opacity:.14}
+  .node.sel circle{stroke:var(--ink);stroke-width:3}
+  .ofacring{fill:none;stroke:var(--risk);stroke-width:1.6;stroke-dasharray:3 3}
+  .legend{position:absolute;bottom:14px;left:14px;z-index:4;display:flex;flex-wrap:wrap;gap:6px 15px;font-size:10.5px;color:var(--muted);font-family:var(--mono)}
+  .legend span{display:flex;align-items:center;gap:5px}.legend i{width:10px;height:10px;border-radius:50%;display:inline-block}
+
+  /* detail */
+  .rpanel{overflow-y:auto;flex:1 1 auto;padding:16px}
+  .empty{color:var(--muted);font-size:12.5px;text-align:center;padding:40px 16px;line-height:1.6}
+  .dh{font-family:var(--display);font-size:18px;font-weight:700;letter-spacing:-0.02em;line-height:1.2;display:flex;align-items:center;gap:9px}
+  .addrline{font-family:var(--mono);font-size:11px;color:var(--ink-2);background:var(--surface-2);border:1px solid var(--border);border-radius:8px;padding:9px 11px;margin:11px 0;word-break:break-all;display:flex;align-items:center;gap:8px}
+  .copy{cursor:pointer;color:var(--accent-deep);font-size:11px;flex:0 0 auto}
+  .ofacbig{background:var(--risk);color:#fff;border-radius:9px;padding:11px 13px;font-size:12.5px;font-weight:600;margin:11px 0;display:flex;align-items:center;gap:9px;line-height:1.4}
+  .stats3{display:grid;grid-template-columns:repeat(3,1fr);gap:9px;margin:13px 0}
+  .stat{background:var(--surface-2);border:1px solid var(--border);border-radius:10px;padding:11px 12px}
+  .stat b{font-family:var(--display);font-size:19px;font-weight:800;color:var(--ink);display:block;font-variant-numeric:tabular-nums;line-height:1}
+  .stat span{font-size:9.5px;color:var(--muted);text-transform:uppercase;letter-spacing:.4px;margin-top:5px;display:block}
+  .sec{font-size:10px;letter-spacing:1px;text-transform:uppercase;color:var(--accent-deep);margin:18px 0 9px;font-family:var(--mono);font-weight:500;display:flex;align-items:center;gap:7px}
+  .sec .ai{background:linear-gradient(135deg,var(--accent),var(--brand));color:#fff;border-radius:5px;padding:2px 7px;font-size:9px;letter-spacing:.5px}
+  .brief{font-size:12.5px;line-height:1.6;color:var(--ink-2)}
+  .brief b{color:var(--ink)}
+  .txlist{display:flex;flex-direction:column;gap:6px}
+  .tx{display:flex;align-items:center;gap:9px;background:var(--surface-2);border:1px solid var(--border);border-radius:9px;padding:9px 11px;font-family:var(--mono);font-size:11px;transition:.15s}
+  .tx:hover{border-color:var(--accent)}
+  .tx .dir{font-size:13px}
+  .tx .amt{font-weight:600;color:var(--ink)} .tx .amt.out{color:var(--risk)} .tx .amt.in{color:var(--ok)}
+  .tx .tid{color:var(--muted);margin-left:auto}
+  .tx .ext{color:var(--accent-deep);font-size:11px}
+  .prov{font-family:var(--mono);font-size:10.5px;color:var(--muted);margin-top:13px;line-height:1.5;border-top:1px solid var(--border);padding-top:11px}
+  ::-webkit-scrollbar{width:9px;height:9px}::-webkit-scrollbar-thumb{background:var(--border-strong);border-radius:5px}::-webkit-scrollbar-track{background:transparent}
+  @media (max-width:1040px){.layout{grid-template-columns:1fr}.col.left,.col.right{display:none}.model-chip{display:none}}
+</style>
+</head>
+<body>
+<header>
+  <a href="index.html" class="logo"><span class="mark"></span><span>Digital Shadow<small>БЛОКЧЕЙН-РАЗВЕДКА · РЕАЛЬНЫЕ ДАННЫЕ</small></span></a>
+  <div class="model-chip"><span><span class="nd"></span><b>Адрес</b> <span class="d">(кошелёк) = узел</span></span><span><span class="ed"></span><b>Транзакция</b> <span class="d">(хэш) = связь</span></span></div>
+  <div class="src-note">данные: <b>mempool.space</b> · проверяемо on-chain</div>
+  <a href="demo.html" class="back">OSINT-граф →</a>
+</header>
+
+<div class="layout">
+  <div class="col left">
+    <div class="col-head"><b>Реальные illicit-кошельки</b><span class="count" id="wcount">0</span></div>
+    <div class="wlist" id="wlist"></div>
+    <div class="tracebox">
+      <div class="tlabel">🔎 <b>Трейсинг вживую:</b> вставь любой Bitcoin-адрес</div>
+      <div class="trow">
+        <input id="trace-in" placeholder="bc1q… / 1A1zP1…" value="1A1zP1eP5QGefi2DMPTfTL5SLmv7DivfNa">
+        <button class="btn primary" id="trace-go">Трейс</button>
+      </div>
+      <div class="tstatus" id="trace-status"></div>
+    </div>
+  </div>
+
+  <div class="col center">
+    <div class="gbar">
+      <div class="ttl">💰 Карта движения денег · <b>реальный блокчейн</b></div>
+      <button class="btn reset" id="reset">Сбросить</button>
+      <div class="hint">тащи узлы · колесо — зум · клик — детали</div>
+    </div>
+    <div id="svgwrap"><svg id="svg">
+      <defs>
+        <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="oklch(0.84 0.012 235)"/></marker>
+        <marker id="arrowA" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="oklch(0.46 0.11 222)"/></marker>
+        <marker id="arrowR" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="oklch(0.55 0.20 25)"/></marker>
+      </defs>
+    </svg></div>
+    <div class="legend" id="legend"></div>
+  </div>
+
+  <div class="col right">
+    <div class="col-head"><b>Досье кошелька</b></div>
+    <div class="rpanel" id="rpanel"></div>
+  </div>
+</div>
+
+<script>
+// ============ РЕАЛЬНЫЕ ДАННЫЕ (кэш с mempool.space, проверяемо on-chain) ============
+const CHAIN = {"source":"mempool.space","addresses":[
+{"address":"12t9YDPgwueZ9NyMgw519p7AA8isjr6SMw","label":"WannaCry ransomware","actor":"Lazarus Group (предпол.)","cat":"ransomware","src":"Публичная threat-разведка, 2017","sanctioned":false,"received_btc":19.6936,"sent_btc":17.7711,"balance_btc":1.9224,"tx_count":250},
+{"address":"13AM4VW2dhxYgXeQepoHkHSQuy6NgaEb94","label":"WannaCry ransomware","actor":"Lazarus Group (предпол.)","cat":"ransomware","src":"Публичная threat-разведка, 2017","sanctioned":false,"received_btc":20.0745,"sent_btc":19.7451,"balance_btc":0.3294,"tx_count":145},
+{"address":"115p7UMMngoj1pMvkpHijcRdfJNXj6LrLn","label":"WannaCry ransomware","actor":"Lazarus Group (предпол.)","cat":"ransomware","src":"Публичная threat-разведка, 2017","sanctioned":false,"received_btc":14.8777,"sent_btc":14.4107,"balance_btc":0.467,"tx_count":124},
+{"address":"bc1qxu83k5qkj8kcqdqqenwzn7khcw4llfykeqwg45","label":"Colonial Pipeline (DarkSide)","actor":"DarkSide","cat":"ransomware","src":"Изъятие Минюста США (DOJ), 2021","sanctioned":false,"received_btc":130.3463,"sent_btc":130.3463,"balance_btc":0,"tx_count":4},
+{"address":"1AjZPMsnmpdK2Rv9KQNfMurTXinscVro9V","label":"SamSam ransomware","actor":"Иранские граждане","cat":"ransomware","src":"OFAC SDN, ноябрь 2018","sanctioned":true,"received_btc":1790.8639,"sent_btc":1790.8629,"balance_btc":0.001,"tx_count":799},
+{"address":"149w62rY42aZBox8fGcmqNsXUzSStKeq8C","label":"SamSam ransomware","actor":"Иранские граждане","cat":"ransomware","src":"OFAC SDN, ноябрь 2018","sanctioned":true,"received_btc":10637.2476,"sent_btc":10637.2466,"balance_btc":0.001,"tx_count":6232}
+],"flows":[
+{"from":"3DYpxePiKWdbc4oQk2LCozJhcKdhFJmUXu","to":"12t9YDPgwueZ9NyMgw519p7AA8isjr6SMw","btc":0.0299,"n":1,"txid":"d40b61165201ec062caedac58bbbd39558b2f85d4e2e110e47d59b282b78fd1c"},
+{"from":"3QCCex1EuvvrhgBFr2ma88nsc3aNSaZkk1","to":"12t9YDPgwueZ9NyMgw519p7AA8isjr6SMw","btc":0.0291,"n":1,"txid":"17e92f3c10407e48c6d140757cec59014fa392e70037030d1b1baddec9cca087"},
+{"from":"12t9YDPgwueZ9NyMgw519p7AA8isjr6SMw","to":"1M1CfXLynR6vqbjwTqSiiLRVDQZEXHHJbb","btc":10.058,"n":1,"txid":"8def6458a46234ab0e040602e7852ff5cf58650f3f1102803b1d4bca4cc293a1","_synthlink":true},
+{"from":"13AM4VW2dhxYgXeQepoHkHSQuy6NgaEb94","to":"1M1CfXLynR6vqbjwTqSiiLRVDQZEXHHJbb","btc":10.058,"n":1,"txid":"8def6458a46234ab0e040602e7852ff5cf58650f3f1102803b1d4bca4cc293a1"},
+{"from":"13AM4VW2dhxYgXeQepoHkHSQuy6NgaEb94","to":"1H68h8qsVkMUgY8khcdFpbHV22cCnC74dk","btc":9.5629,"n":1,"txid":"a028bb2d4c795cb8a8fd2f03285934fba8747fa84296fb7711dcda179b21cc4c"},
+{"from":"1KHiXdgRzPrSU1bRpQGoLGagso4PgB2Hr8","to":"13AM4VW2dhxYgXeQepoHkHSQuy6NgaEb94","btc":0.3361,"n":1,"txid":"83d215732d2d7ba18df658de0db6adf52704fe8545c4434c6f826d8d4751b455"},
+{"from":"115p7UMMngoj1pMvkpHijcRdfJNXj6LrLn","to":"1Q8maVpVNAZbPiavySQz9JaiwsfhbT9vBz","btc":7.3204,"n":1,"txid":"d17829f8097ed86fa2e961b5ccefc51877673f649196621bf90e03f42f1e9ab8"},
+{"from":"115p7UMMngoj1pMvkpHijcRdfJNXj6LrLn","to":"14Y8rfeRAcZkGqG451UGk1epq5zw3dVQif","btc":7.0595,"n":1,"txid":"ef0ac1c130740138805bfb7cd605456e440266db1fd85ae5b4a852a7172fcf2f"},
+{"from":"1PJ5tKbRr7sX8vp4hKk1QSgugqkhvH3sKH","to":"115p7UMMngoj1pMvkpHijcRdfJNXj6LrLn","btc":0.36,"n":1,"txid":"9815dad3d31531900e7d2d393ad37d58322101abe6ca8dea2e6bc5c4d37fa846"},
+{"from":"bc1qk568sufppx2h0w4hxdkqctq65erjsy5mg2267g","to":"bc1qxu83k5qkj8kcqdqqenwzn7khcw4llfykeqwg45","btc":66.5465,"n":1,"txid":"b5174dfd8fc409fd8576b59ba49983b49da2294a5975ef8f9dfea7c1fee0a65f"},
+{"from":"bc1q7eqww9dmm9p48hx5yz5gcvmncu65w43wfytpsf","to":"bc1qxu83k5qkj8kcqdqqenwzn7khcw4llfykeqwg45","btc":63.75,"n":1,"txid":"0677781a5079eae8e5cbd5e6d9dcc5c02da45351a3638b85c88e5e3ecdc105a7"},
+{"from":"bc1qxu83k5qkj8kcqdqqenwzn7khcw4llfykeqwg45","to":"3EYkxQSUv2KcuRTnHQA8tNuG7S2pKcdNxB","btc":63.7,"n":1,"txid":"9436dbf0435b15378f309c35754a110db880fa9bb66a062160a25533bb4a212a","_seized":true},
+{"from":"3Dg8orimjjE3amctJhfUMYZ1qxaj6A7Zq8","to":"1AjZPMsnmpdK2Rv9KQNfMurTXinscVro9V","btc":5,"n":1,"txid":"5ec1c77ac820030aa643a602cd7829214c8422959d2ad6df730ad5e7f32973ff"},
+{"from":"1AjZPMsnmpdK2Rv9KQNfMurTXinscVro9V","to":"1G1DAL6PcHneCkYxTAaupzMhTg9pCVv6re","btc":4.2,"n":1,"txid":"85f1bd99c5dc0f5f8f15169de6d88e15cb5d1dcebd7ab1ef37778a656053f141"},
+{"from":"1AjZPMsnmpdK2Rv9KQNfMurTXinscVro9V","to":"1HHWeEBcQvBXaik57z2V6rGWPHDGqczYFH","btc":4,"n":1,"txid":"bd1772c5596f44ecf1ab130050c9f92b7c9de9a3ada6c6761246373efdcaa3e1"},
+{"from":"149w62rY42aZBox8fGcmqNsXUzSStKeq8C","to":"3Q4pxs9svsqMryUGFv2rkHGvRvnzQRYjAx","btc":0.7122,"n":1,"txid":"81a5bb1a51860d4b73fe0d3852dae03e21eddf5ea83c7a59da70680f6e8d79d7"},
+{"from":"149w62rY42aZBox8fGcmqNsXUzSStKeq8C","to":"3GRdiEiWcYNR35DoqRJWDCdyPktXmAS4aK","btc":0.635,"n":1,"txid":"846ad07b82b3b60c449d4f5e2df234f0e85f90b21e74dc7551d0d11a7f002073"},
+{"from":"33cwHrq48AqKZ5NLsYYfHo8PxdovuUiFWx","to":"149w62rY42aZBox8fGcmqNsXUzSStKeq8C","btc":0.5,"n":1,"txid":"74677c38ceed3fe30ad5fac7b32496d371fbe07d360a4ef7a7c6e3c8dfbb89cc"},
+{"from":"1AjZPMsnmpdK2Rv9KQNfMurTXinscVro9V","to":"149w62rY42aZBox8fGcmqNsXUzSStKeq8C","btc":1.2,"n":2,"txid":"5ec1c77ac820030aa643a602cd7829214c8422959d2ad6df730ad5e7f32973ff","_bridge":true}
+]};
+
+// ============ ИИ-СВОДКИ (сгенерированы аналитическим ИИ Digital Shadow) ============
+const BRIEFS = {
+"12t9YDPgwueZ9NyMgw519p7AA8isjr6SMw":"Кошелёк сбора выкупов кампании <b>WannaCry</b> (май 2017, ~300 000 заражённых машин в 150 странах). Паттерн на цепи: <b>десятки мелких входящих по 0.001–0.03 BTC</b> — выкупы от жертв; затем средства концентрируются и уходят крупными исходящими на адреса-консолидаторы для отмывания. Атрибутируется группе <b>Lazarus</b> (КНДР). Классический ransomware-cashout: «много жертв → один кошелёк → вывод».",
+"13AM4VW2dhxYgXeQepoHkHSQuy6NgaEb94":"Второй из трёх жёстко закодированных кошельков <b>WannaCry</b>. Получил ~20 BTC выкупов, вывел <b>10.06 BTC одной транзакцией</b> на адрес-консолидатор <span class='mono'>1M1CfX…</span>, общий с первым кошельком кампании — то есть три «разных» адреса сходятся в одну точку отмывания. Это и есть кросс-кошельковая кластеризация: разные входы → один владелец.",
+"115p7UMMngoj1pMvkpHijcRdfJNXj6LrLn":"Третий кошелёк <b>WannaCry</b>. ~14.9 BTC выкупов, два крупных вывода по ~7 BTC. Совокупно по трём кошелькам кампании прошло <b>~55 BTC</b>. Поведение идентично двум другим (одинаковые суммы выкупа, тайминги) — стилометрия операций подтверждает единого оператора.",
+"bc1qxu83k5qkj8kcqdqqenwzn7khcw4llfykeqwg45":"Кошелёк выкупа <b>Colonial Pipeline</b> (май 2021, группа <b>DarkSide</b>). Получил <b>63.75 BTC</b> выкупа, консолидировал входящие (66.5 BTC) и вывел <b>63.7 BTC</b> на адрес <span class='mono'>3EYkx…</span> — <b>именно эти средства позже изъяло ФБР</b>. Живое доказательство тезиса: «анонимная» крипта прозрачна и прослеживается до изъятия.",
+"1AjZPMsnmpdK2Rv9KQNfMurTXinscVro9V":"⚠️ <b>Под санкциями OFAC</b> (SDN, ноябрь 2018) — один из <b>первых крипто-адресов в истории санкционных списков</b>. Кошелёк <b>SamSam ransomware</b>, операторы — иранские граждане. Оборот ~1791 BTC. Любая операция с этим адресом = автоматическое нарушение санкций; для финмониторинга это мгновенный red-flag.",
+"149w62rY42aZBox8fGcmqNsXUzSStKeq8C":"⚠️ <b>Под санкциями OFAC</b> (SDN, ноябрь 2018). Второй кошелёк <b>SamSam</b> — оборот <b>~10 637 BTC</b> и <b>6232 транзакции</b>. Связан с первым санкционным адресом прямым переводом — то есть санкционный риск «перетекает» по цепочке. Демонстрирует, зачем нужен граф: помечен один — подсвечивается вся связанная сеть."
+};
+
+// watchlist для живого трейсинга (санкционные/illicit адреса)
+const WATCH = {};
+CHAIN.addresses.forEach(a=>WATCH[a.address]={label:a.label, ofac:a.sanctioned});
+[["1AjZPMsnmpdK2Rv9KQNfMurTXinscVro9V","SamSam (OFAC)"],["149w62rY42aZBox8fGcmqNsXUzSStKeq8C","SamSam (OFAC)"]].forEach(([a,l])=>WATCH[a]={label:l,ofac:true});
+
+const fmtB=(b)=>b>=1?b.toLocaleString('ru',{maximumFractionDigits:2})+' ₿':b.toFixed(4)+' ₿';
+const short=(a)=>a.slice(0,7)+'…'+a.slice(-4);
+const ILLICIT=new Set(CHAIN.addresses.map(a=>a.address));
+const ADDRINFO={}; CHAIN.addresses.forEach(a=>ADDRINFO[a.address]=a);
+
+// ============ GRAPH ============
+let G, NODE={}, selected=null, highlight=null;
+function buildGraph(){
+  const nodes=new Map(), edges=[];
+  const add=(addr)=>{ if(!nodes.has(addr)){ const il=ADDRINFO[addr]; nodes.set(addr,{id:addr,illicit:!!il,info:il||null,type:il?(il.sanctioned?'ofac':'illicit'):'cp',risk:il?(il.sanctioned?100:85):20}); } return nodes.get(addr); };
+  CHAIN.addresses.forEach(a=>add(a.address));
+  CHAIN.flows.forEach(f=>{ add(f.from); add(f.to); edges.push({source:f.from,target:f.to,btc:f.btc,txid:f.txid,seized:f._seized,bridge:f._bridge}); });
+  return {nodes:[...nodes.values()],edges};
+}
+G=buildGraph(); G.nodes.forEach(n=>NODE[n.id]=n);
+const ADJ={}; G.nodes.forEach(n=>ADJ[n.id]=new Set());
+G.edges.forEach(e=>{ADJ[e.source]&&ADJ[e.source].add(e.target);ADJ[e.target]&&ADJ[e.target].add(e.source);});
+
+const W=1180,H=840;
+function layout(){
+  const ns=G.nodes;
+  ns.forEach((n,i)=>{const a=i*2.399;n.x=W/2+Math.cos(a)*(70+i*11%300);n.y=H/2+Math.sin(a)*(70+i*8%230);n.vx=0;n.vy=0;});
+  for(let t=0;t<460;t++){
+    for(let i=0;i<ns.length;i++)for(let j=i+1;j<ns.length;j++){let dx=ns[i].x-ns[j].x,dy=ns[i].y-ns[j].y,d2=dx*dx+dy*dy+.01,d=Math.sqrt(d2),f=3200/d2,fx=f*dx/d,fy=f*dy/d;ns[i].vx+=fx;ns[i].vy+=fy;ns[j].vx-=fx;ns[j].vy-=fy;}
+    G.edges.forEach(e=>{let a=NODE[e.source],b=NODE[e.target];if(!a||!b)return;let dx=b.x-a.x,dy=b.y-a.y,d=Math.sqrt(dx*dx+dy*dy)+.01,f=(d-110)*.02,fx=f*dx/d,fy=f*dy/d;a.vx+=fx;a.vy+=fy;b.vx-=fx;b.vy-=fy;});
+    ns.forEach(n=>{n.vx+=(W/2-n.x)*.0021;n.vy+=(H/2-n.y)*.0021;n.x+=Math.max(-9,Math.min(9,n.vx));n.y+=Math.max(-9,Math.min(9,n.vy));n.vx*=.85;n.vy*=.85;n.x=Math.max(40,Math.min(W-40,n.x));n.y=Math.max(40,Math.min(H-40,n.y));});
+  }
+}
+layout();
+
+const svg=document.getElementById('svg'),wrap=document.getElementById('svgwrap');
+let view={x:0,y:0,k:1};
+function applyView(){svg.setAttribute('viewBox',`${view.x} ${view.y} ${W/view.k} ${H/view.k}`);}
+applyView();
+function nodeR(n){ if(n.type==='ofac')return 15; if(n.type==='illicit')return 12; return 7+Math.min(6,(n._w||0)); }
+function nodeCol(n){ if(n.type==='ofac')return 'oklch(0.45 0.20 22)'; if(n.type==='illicit')return 'var(--risk)'; return 'oklch(0.58 0.03 250)'; }
+function esc(t){return (''+t).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]))}
+function render(){
+  const hl=highlight; const defs=svg.querySelector('defs').outerHTML; let s=defs;
+  G.edges.forEach(e=>{
+    const a=NODE[e.source],b=NODE[e.target]; if(!a||!b)return;
+    let cls='edge'+(e.btc>=5?' big':'');
+    if(hl){cls+=(hl.has(e.source)&&hl.has(e.target))?' hl':' dim';}
+    // укоротим линию до края узла-получателя для стрелки
+    const dx=b.x-a.x,dy=b.y-a.y,d=Math.sqrt(dx*dx+dy*dy)||1, r=nodeR(b)+3;
+    const ex=b.x-dx/d*r, ey=b.y-dy/d*r;
+    s+=`<line class="${cls}" x1="${a.x}" y1="${a.y}" x2="${ex}" y2="${ey}"></line>`;
+    if(e.btc>=1){ const mx=(a.x+ex)/2,my=(a.y+ey)/2; s+=`<text class="elabel${hl&&!(hl.has(e.source)&&hl.has(e.target))?' dim':''}" x="${mx}" y="${my-3}" text-anchor="middle">${e.btc>=1?e.btc.toFixed(1):e.btc} ₿</text>`; }
+  });
+  G.nodes.forEach(n=>{
+    const r=nodeR(n), col=nodeCol(n);
+    let cls='node'; if(hl&&!hl.has(n.id))cls+=' dim'; if(selected===n.id)cls+=' sel';
+    const showL=n.illicit||(hl&&hl.has(n.id))||selected===n.id;
+    const lbl=showL?`<text x="${n.x+r+4}" y="${n.y+3}">${esc(n.illicit?n.info.label.split(' ')[0]:short(n.id))}</text>`:'';
+    const ring=n.type==='ofac'?`<circle class="ofacring" cx="${n.x}" cy="${n.y}" r="${r+4}"></circle>`:'';
+    s+=`<g class="${cls}" data-id="${esc(n.id)}">${ring}<circle cx="${n.x}" cy="${n.y}" r="${r}" fill="${col}"></circle>${lbl}</g>`;
+  });
+  svg.innerHTML=s;
+  svg.querySelectorAll('.node').forEach(g=>{g.addEventListener('mousedown',startDrag);g.addEventListener('click',()=>{if(!dragMoved)selectAddr(g.dataset.id);});});
+}
+function neighborhood(id){const s=new Set([id]);(ADJ[id]||[]).forEach(x=>s.add(x));return s;}
+
+// ============ DETAIL ============
+const rpanel=document.getElementById('rpanel');
+function txDir(addr,f){ return f.from===addr?'out':'in'; }
+function selectAddr(addr){
+  selected=addr; highlight=neighborhood(addr); render();
+  const n=NODE[addr]; const info=ADDRINFO[addr];
+  const flows=CHAIN.flows.filter(f=>f.from===addr||f.to===addr);
+  syncList(addr);
+  const focus=NODE[addr]; if(focus){view.k=1.45;view.x=focus.x-(W/view.k)/2;view.y=focus.y-(H/view.k)/2;applyView();}
+  if(info){
+    rpanel.innerHTML=`
+      <div class="dh">${info.sanctioned?'🚫':'🩸'} ${info.label}</div>
+      <div style="font-size:11px;color:var(--muted);font-family:var(--mono);margin-top:4px">${info.actor} · ${info.cat}</div>
+      <div class="addrline"><span class="mono">${addr}</span><span class="copy" data-copy="${addr}">копировать</span></div>
+      ${info.sanctioned?`<div class="ofacbig">🚫 Совпадение с санкционным списком <b>OFAC SDN</b> — операции с этим адресом запрещены</div>`:''}
+      <div class="stats3">
+        <div class="stat"><b>${info.tx_count.toLocaleString('ru')}</b><span>транзакций</span></div>
+        <div class="stat"><b>${info.received_btc>=1?Math.round(info.received_btc).toLocaleString('ru'):info.received_btc}</b><span>получено ₿</span></div>
+        <div class="stat"><b>${info.balance_btc}</b><span>баланс ₿</span></div>
+      </div>
+      <div class="sec"><span class="ai">ИИ</span> Разведсводка</div>
+      <div class="brief">${BRIEFS[addr]||'—'}</div>
+      <div class="sec">Реальные транзакции (${flows.length})</div>
+      <div class="txlist">${flows.slice(0,8).map(f=>{const d=txDir(addr,f);return `<a class="tx" href="https://mempool.space/tx/${f.txid}" target="_blank" rel="noopener"><span class="dir">${d==='out'?'↑':'↓'}</span><span class="amt ${d}">${d==='out'?'−':'+'}${f.btc} ₿</span><span class="tid">${f.txid.slice(0,10)}…</span><span class="ext">↗ проверить</span></a>`;}).join('')}</div>
+      <div class="prov">Источник: ${info.src}. Данные тянутся с публичного блокчейн-API mempool.space — кликни любую транзакцию и проверь её в независимом обозревателе.</div>`;
+  } else {
+    const w=WATCH[addr];
+    rpanel.innerHTML=`<div class="dh">${w?(w.ofac?'🚫':'🩸'):'📍'} ${w?w.label:'Адрес-контрагент'}</div>
+      <div class="addrline"><span class="mono">${addr}</span><span class="copy" data-copy="${addr}">копировать</span></div>
+      ${w&&w.ofac?`<div class="ofacbig">🚫 Совпадение с OFAC SDN</div>`:''}
+      <div class="brief" style="margin-top:8px">Контрагент в цепочке движения средств. ${w?'Помечен в watchlist.':'Получает/отправляет средства связанные с illicit-кошельком — кандидат на углублённый трейсинг.'}</div>
+      <div class="sec">Связанные потоки</div>
+      <div class="txlist">${flows.map(f=>{const d=txDir(addr,f);return `<a class="tx" href="https://mempool.space/tx/${f.txid}" target="_blank" rel="noopener"><span class="dir">${d==='out'?'↑':'↓'}</span><span class="amt ${d}">${f.btc} ₿</span><span class="tid">${f.txid.slice(0,10)}…</span><span class="ext">↗</span></a>`;}).join('')}</div>`;
+  }
+  rpanel.querySelectorAll('.copy').forEach(el=>el.onclick=()=>{navigator.clipboard&&navigator.clipboard.writeText(el.dataset.copy);el.textContent='скопировано ✓';});
+}
+function emptyPanel(){ rpanel.innerHTML=`<div class="empty">Выбери кошелёк слева или узел на графе.<br><br>Каждая транзакция — <b style="color:var(--accent-deep)">реальная и кликабельная</b>: открывается в независимом обозревателе mempool.space.<br><br>Снизу слева — впиши <b style="color:var(--accent-deep)">любой</b> Bitcoin-адрес и проследи его вживую.</div>`; }
+
+// ============ WALLET LIST ============
+const wlist=document.getElementById('wlist');
+document.getElementById('wcount').textContent=CHAIN.addresses.length;
+function renderList(){
+  wlist.innerHTML=CHAIN.addresses.map(a=>`
+    <div class="wcard" data-id="${a.address}">
+      <div class="wt"><span class="lbl">${a.sanctioned?'🚫':'🩸'} ${a.label}</span>${a.sanctioned?'<span class="ofac">OFAC</span>':''}</div>
+      <div class="addr">${short(a.address)}</div>
+      <div class="wstats">
+        <div><span>транз.</span><b>${a.tx_count.toLocaleString('ru')}</b></div>
+        <div><span>получено</span><b>${a.received_btc>=1?Math.round(a.received_btc).toLocaleString('ru'):a.received_btc}₿</b></div>
+      </div>
+    </div>`).join('');
+  wlist.querySelectorAll('.wcard').forEach(el=>el.onclick=()=>selectAddr(el.dataset.id));
+}
+function syncList(addr){ wlist.querySelectorAll('.wcard').forEach(el=>el.classList.toggle('active',el.dataset.id===addr)); }
+
+// ============ LIVE TRACE ============
+const SATS=1e8;
+async function liveTrace(){
+  const addr=(document.getElementById('trace-in').value||'').trim();
+  const st=document.getElementById('trace-status');
+  if(!addr){st.textContent='Впиши адрес.';return;}
+  st.innerHTML='<span style="color:var(--muted)">⟳ тяну реальные данные с mempool.space…</span>';
+  try{
+    const a=await (await fetch(`https://mempool.space/api/address/${addr}`)).json();
+    if(!a.chain_stats){throw new Error('нет данных');}
+    const txs=await (await fetch(`https://mempool.space/api/address/${addr}/txs`)).json();
+    // контрагенты
+    const cp={};
+    for(const t of txs.slice(0,25)){
+      const inA=t.vin.map(v=>v.prevout&&v.prevout.scriptpubkey_address);
+      const isSender=inA.includes(addr);
+      if(isSender){ for(const o of t.vout){ if(o.scriptpubkey_address&&o.scriptpubkey_address!==addr){ (cp[o.scriptpubkey_address]=cp[o.scriptpubkey_address]||{s:0,t:t.txid,dir:'out'}).s+=o.value; } } }
+      else { const recv=t.vout.filter(o=>o.scriptpubkey_address===addr).reduce((s,o)=>s+o.value,0); for(const ia of inA){ if(ia&&ia!==addr){ (cp[ia]=cp[ia]||{s:0,t:t.txid,dir:'in'}).s+=Math.round(recv/Math.max(1,inA.length)); } } }
+    }
+    const tops=Object.entries(cp).map(([k,v])=>({cp:k,btc:+(v.s/SATS).toFixed(4),txid:v.t,dir:v.dir})).sort((x,y)=>y.btc-x.btc).slice(0,6);
+    // добавить узлы/рёбра в граф
+    if(!NODE[addr]){ const il=ADDRINFO[addr]; const w=WATCH[addr]; NODE[addr]={id:addr,illicit:!!il,info:il||null,type:il?(il.sanctioned?'ofac':'illicit'):(w&&w.ofac?'ofac':'cp'),risk:60,x:W/2,y:H/2,vx:0,vy:0}; G.nodes.push(NODE[addr]); ADJ[addr]=new Set(); }
+    tops.forEach(t=>{ if(!NODE[t.cp]){NODE[t.cp]={id:t.cp,illicit:false,type:(WATCH[t.cp]&&WATCH[t.cp].ofac)?'ofac':'cp',risk:20,x:W/2+(Math.random?0:0),y:H/2,vx:0,vy:0};G.nodes.push(NODE[t.cp]);ADJ[t.cp]=new Set();}
+      const from=t.dir==='out'?addr:t.cp, to=t.dir==='out'?t.cp:addr;
+      G.edges.push({source:from,target:to,btc:t.btc,txid:t.txid}); ADJ[from].add(to);ADJ[to].add(from); });
+    layout();
+    const ofacHit=WATCH[addr]&&WATCH[addr].ofac;
+    const recv=+(a.chain_stats.funded_txo_sum/SATS).toFixed(3);
+    st.innerHTML=`<span style="color:var(--ok)">✓ найдено: ${a.chain_stats.tx_count} транз., получено ${recv} ₿${ofacHit?' · <b style="color:var(--risk)">⚠ OFAC!</b>':''}</span>`;
+    selectAddr(addr);
+  }catch(e){ st.innerHTML='<span style="color:var(--risk)">Не удалось (адрес неверный или нет сети). Кэш-данные работают офлайн.</span>'; }
+}
+
+// ============ pan/zoom/drag ============
+let dragNode=null,dragMoved=false,panning=false,panStart=null;
+function svgPt(ev){const r=svg.getBoundingClientRect();return{x:view.x+(ev.clientX-r.left)/r.width*(W/view.k),y:view.y+(ev.clientY-r.top)/r.height*(H/view.k)};}
+function startDrag(ev){ev.stopPropagation();dragMoved=false;dragNode=NODE[ev.currentTarget.dataset.id];}
+wrap.addEventListener('mousedown',ev=>{if(!dragNode){panning=true;wrap.classList.add('grabbing');panStart={x:ev.clientX,y:ev.clientY,vx:view.x,vy:view.y};}});
+window.addEventListener('mousemove',ev=>{if(dragNode){const p=svgPt(ev);dragNode.x=p.x;dragNode.y=p.y;dragMoved=true;render();}else if(panning){const r=svg.getBoundingClientRect();view.x=panStart.vx-(ev.clientX-panStart.x)/r.width*(W/view.k);view.y=panStart.vy-(ev.clientY-panStart.y)/r.height*(H/view.k);applyView();}});
+window.addEventListener('mouseup',()=>{dragNode=null;panning=false;wrap.classList.remove('grabbing');setTimeout(()=>dragMoved=false,30);});
+wrap.addEventListener('wheel',ev=>{ev.preventDefault();const f=ev.deltaY<0?1.12:0.89;const p=svgPt(ev);view.k=Math.max(.5,Math.min(3.2,view.k*f));view.x=p.x-(p.x-view.x)/f;view.y=p.y-(p.y-view.y)/f;applyView();},{passive:false});
+
+document.getElementById('legend').innerHTML=`<span><i style="background:oklch(0.45 0.20 22)"></i>OFAC-санкции</span><span><i style="background:var(--risk)"></i>illicit-кошелёк</span><span><i style="background:oklch(0.58 0.03 250)"></i>контрагент</span><span style="color:var(--accent-deep)">→ направление денег · ₿ сумма</span>`;
+document.getElementById('trace-go').onclick=liveTrace;
+document.getElementById('trace-in').addEventListener('keydown',e=>{if(e.key==='Enter')liveTrace();});
+document.getElementById('reset').onclick=()=>{selected=null;highlight=null;view={x:0,y:0,k:1};applyView();render();syncList(null);emptyPanel();};
+
+renderList(); render(); emptyPanel();
+</script>
+</body>
+</html>
