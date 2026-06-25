@@ -1,0 +1,176 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Digital Shadow — карта угроз Алматы</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@400;500;600;700;800&family=Inter:wght@400;450;500;600&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+<style>
+  :root{
+    --bg:oklch(0.984 0.004 230);--surface:oklch(1 0 0);--surface-2:oklch(0.966 0.006 230);
+    --border:oklch(0.905 0.008 235);--border-strong:oklch(0.84 0.012 235);
+    --ink:oklch(0.23 0.022 258);--ink-2:oklch(0.39 0.02 258);--muted:oklch(0.49 0.016 258);
+    --brand:oklch(0.45 0.10 248);--accent:oklch(0.52 0.11 220);--accent-deep:oklch(0.46 0.11 222);
+    --risk:oklch(0.55 0.20 25);--amber:oklch(0.62 0.13 65);--ok:oklch(0.52 0.13 155);
+    --sans:'Inter','Segoe UI',system-ui,sans-serif;--display:'Inter Tight','Segoe UI',system-ui,sans-serif;--mono:'JetBrains Mono','Consolas',ui-monospace,monospace;
+    --ease:cubic-bezier(0.23,1,0.32,1);
+  }
+  *{margin:0;padding:0;box-sizing:border-box}
+  html,body{height:100%}
+  body{font-family:var(--sans);background:var(--bg);color:var(--ink);overflow:hidden;height:100vh;-webkit-font-smoothing:antialiased;font-feature-settings:"cv05","ss01"}
+  .mono{font-family:var(--mono)} a{color:inherit;text-decoration:none}
+  header{height:60px;display:flex;align-items:center;gap:16px;padding:0 22px;border-bottom:1px solid var(--border);background:var(--surface);position:relative;z-index:1000}
+  .logo{display:flex;align-items:center;gap:11px;font-family:var(--display);font-weight:700;font-size:16px;letter-spacing:-0.02em}
+  .mark{width:30px;height:30px;border-radius:8px;position:relative;flex:0 0 auto;background:radial-gradient(120% 120% at 30% 20%,var(--accent),var(--brand) 55%,oklch(0.34 0.085 252));box-shadow:0 6px 16px -7px oklch(0.45 0.10 248/.55),inset 0 1px 0 oklch(1 0 0/.3)}
+  .mark::after{content:"";position:absolute;inset:0;border-radius:8px;background:radial-gradient(circle at 50% 47%,transparent 30%,oklch(1 0 0/.85) 32%,transparent 34%),radial-gradient(circle at 50% 47%,oklch(1 0 0/.95) 0 12%,transparent 14%)}
+  .logo small{display:block;font-family:var(--mono);font-size:10px;color:var(--muted);letter-spacing:.04em;font-weight:400;margin-top:1px}
+  .stats{display:flex;gap:9px;margin-left:auto}
+  .stat{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:7px 14px;min-width:92px;text-align:center}
+  .stat b{font-family:var(--display);font-size:19px;font-weight:800;line-height:1;display:block} .stat span{font-size:9.5px;color:var(--muted);text-transform:uppercase;letter-spacing:.4px;margin-top:4px;display:block}
+  .stat.t b{color:var(--accent-deep)} .stat.r b{color:var(--risk)}
+  .nav{display:flex;gap:8px}
+  .navb{font-size:13px;color:var(--ink-2);padding:8px 12px;border:1px solid var(--border-strong);border-radius:9px;transition:.15s;font-weight:500}
+  .navb:hover{border-color:var(--ink-2);background:var(--surface-2)}
+  .navb.acc{border-color:var(--risk);color:var(--risk)}
+
+  .layout{display:grid;grid-template-columns:330px 1fr;height:calc(100vh - 60px)}
+  .panel{border-right:1px solid var(--border);display:flex;flex-direction:column;overflow:hidden;background:var(--surface)}
+  .ph{padding:13px 16px 11px;font-size:11px;letter-spacing:1px;text-transform:uppercase;color:var(--muted);border-bottom:1px solid var(--border);display:flex;align-items:center;gap:8px}
+  .ph b{color:var(--ink)} .ph .c{margin-left:auto;font-family:var(--mono);font-size:10px;color:var(--accent-deep);background:var(--surface-2);border:1px solid var(--border);border-radius:20px;padding:2px 9px}
+  .filters{display:flex;flex-wrap:wrap;gap:6px;padding:11px 14px;border-bottom:1px solid var(--border)}
+  .fb{font-size:11px;padding:5px 10px;border:1px solid var(--border-strong);border-radius:99px;cursor:pointer;background:var(--surface);color:var(--ink-2);transition:.15s;font-family:var(--mono)}
+  .fb:hover{border-color:var(--accent)} .fb.on{background:var(--ink);color:#fff;border-color:var(--ink)}
+  .hlist{overflow-y:auto;flex:1 1 auto;padding:10px}
+  .hcard{background:var(--surface);border:1px solid var(--border);border-radius:11px;padding:11px 12px;margin-bottom:8px;cursor:pointer;transition:transform .15s var(--ease),border-color .15s,box-shadow .15s}
+  .hcard:hover{border-color:var(--border-strong);box-shadow:0 8px 18px -14px oklch(0.23 0.05 255/.4);transform:translateY(-1px)}
+  .hcard.active{border-color:var(--risk);box-shadow:0 0 0 1px var(--risk)}
+  .hcard .ht{display:flex;align-items:center;gap:8px;margin-bottom:5px}
+  .hcard .sc{font-family:var(--display);font-weight:800;font-size:15px;min-width:26px}
+  .hcard .ic{font-size:14px} .hcard .nm{font-weight:650;font-size:12.5px}
+  .hcard .loc{font-size:11px;color:var(--muted);margin-left:auto;font-family:var(--mono)}
+  .hcard .ds{font-size:11px;color:var(--ink-2);line-height:1.4}
+  .legend{padding:11px 16px;border-top:1px solid var(--border);font-family:var(--mono);font-size:10.5px;color:var(--muted);display:flex;flex-direction:column;gap:5px}
+  .legend span{display:flex;align-items:center;gap:7px} .legend i{width:10px;height:10px;border-radius:50%;display:inline-block}
+
+  #map{height:100%;width:100%;background:var(--surface-2)}
+  .leaflet-popup-content-wrapper{border-radius:12px;box-shadow:0 18px 50px -24px oklch(0.23 0.05 255/.5);border:1px solid var(--border)}
+  .leaflet-popup-content{margin:13px 15px;font-family:var(--sans)}
+  .pop .pt{display:flex;align-items:center;gap:8px;margin-bottom:6px}
+  .pop .psc{font-family:var(--display);font-weight:800;font-size:17px} .pop .pnm{font-weight:700;font-size:14px}
+  .pop .pds{font-size:12px;color:var(--ink-2);line-height:1.45;margin-bottom:8px;max-width:240px}
+  .pop .pco{font-family:var(--mono);font-size:10.5px;color:var(--muted);margin-bottom:9px}
+  .pop a.trace{display:inline-flex;align-items:center;gap:6px;font-size:12px;font-weight:600;color:#fff;background:var(--risk);border-radius:8px;padding:7px 12px}
+  .badge{font-size:9.5px;letter-spacing:.3px;padding:2px 7px;border-radius:5px;text-transform:uppercase;border:1px solid;font-weight:600;font-family:var(--mono)}
+  .title-overlay{position:absolute;top:74px;left:50%;transform:translateX(-50%);z-index:600;background:var(--surface);border:1px solid var(--border);border-radius:99px;padding:8px 18px;font-family:var(--display);font-weight:700;font-size:14px;box-shadow:0 8px 24px -14px oklch(0.23 0.05 255/.4)}
+  .title-overlay b{color:var(--risk)}
+  @media (max-width:860px){.layout{grid-template-columns:1fr}.panel{display:none}.stats{display:none}}
+</style>
+</head>
+<body>
+<header>
+  <a href="index.html" class="logo"><span class="mark"></span><span>Digital Shadow<small>КАРТА УГРОЗ · АЛМАТЫ</small></span></a>
+  <div class="stats">
+    <div class="stat t"><b id="st-pts">0</b><span>точек</span></div>
+    <div class="stat r"><b id="st-hi">0</b><span>высокий риск</span></div>
+    <div class="stat"><b id="st-net">0</b><span>сетей</span></div>
+  </div>
+  <div class="nav">
+    <a href="demo.html" class="navb">OSINT-граф</a>
+    <a href="trace.html" class="navb acc">💰 Блокчейн</a>
+    <a href="index.html" class="navb">← Сайт</a>
+  </div>
+</header>
+
+<div class="layout">
+  <div class="panel">
+    <div class="ph"><b>Критические точки</b><span class="c" id="lcount">0</span></div>
+    <div class="filters" id="filters"></div>
+    <div class="hlist" id="hlist"></div>
+    <div class="legend" id="legend"></div>
+  </div>
+  <div style="position:relative">
+    <div class="title-overlay">🗺️ Тепловая карта незаконной активности · <b>Алматы</b></div>
+    <div id="map"></div>
+  </div>
+</div>
+
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script src="https://unpkg.com/leaflet.heat@0.2.0/dist/leaflet-heat.js"></script>
+<script>
+// Демонстрационный сценарий РК на реальной карте Алматы (точки — иллюстративные).
+const CAT={drugs:{ic:"💊",ru:"Наркотики",col:"#c2384a"},money_mule:{ic:"💸",ru:"Дропы/обнал",col:"#a16207"},pii_leak:{ic:"🗄️",ru:"Утечка ПДн",col:"#c2410c"},weapons:{ic:"🔫",ru:"Оружие",col:"#be185d"},vapes:{ic:"💨",ru:"Вейпы",col:"#2563eb"},counterfeit:{ic:"🏷️",ru:"Контрафакт",col:"#0f766e"}};
+const HOTSPOTS=[
+{id:1,lat:43.2389,lng:76.9451,cat:"drugs",risk:96,name:"Закладки мефедрона",loc:"Ботанический сад",net:"СЕТЬ ALPHA",ds:"Точка закладок сети @kladman_alm. Общий TRON-кошелёк, кросс-платформа.",wallet:true},
+{id:2,lat:43.2206,lng:76.8800,cat:"drugs",risk:90,name:"Закладки (витрина AlmStuff)",loc:"Парк им. Ганди",net:"СЕТЬ ALPHA",ds:"Telegram-магазин, тот же кошелёк что и Ботсад.",wallet:true},
+{id:3,lat:43.2070,lng:76.8869,cat:"drugs",risk:86,name:"Канал-прикрытие «цветы»",loc:"Парк 1-го Президента",net:"СЕТЬ ALPHA",ds:"«Букеты» = закодированный прайс мефедрона. Уводит в бот ALPHA.",wallet:true},
+{id:4,lat:43.2380,lng:76.9180,cat:"money_mule",risk:88,name:"Вербовка курьеров",loc:"Центр (Алмалинский)",net:"СЕТЬ ALPHA",ds:"Набор кладменов, проверка по утёкшей базе ПДн.",wallet:true},
+{id:5,lat:43.2560,lng:76.9285,cat:"pii_leak",risk:74,name:"Сервис «пробив»",loc:"БЦ, Алмалинский р-н",ds:"Доксинг по ИИН на базе утёкшего телекома 2026."},
+{id:6,lat:43.2100,lng:76.9000,cat:"money_mule",risk:68,name:"Обнал крипты USDT↔Kaspi",loc:"Бостандыкский р-н",ds:"Дроп-команда, общий кошелёк с продавцом утечки."},
+{id:7,lat:43.2470,lng:76.9550,cat:"counterfeit",risk:36,name:"Контрабанда сигарет",loc:"Зелёный базар",ds:"Без акциза, привоз Дубай/Беларусь."},
+{id:8,lat:43.1980,lng:76.9300,cat:"vapes",risk:46,name:"Вейпы у школ",loc:"Бостандык, мкр Орбита",ds:"Без акциза, «школьникам скидка» — таргет на несовершеннолетних."},
+{id:9,lat:43.2330,lng:76.9560,cat:"drugs",risk:60,name:"Закладки соль/амф",loc:"Медеуский р-н",ds:"Ночная работа, оплата криптой."},
+{id:10,lat:43.2560,lng:76.9080,cat:"alcohol",risk:38,name:"Ночной алкоголь",loc:"Алмалинский р-н",ds:"Доставка после 21:00, контрафактный коньяк."},
+{id:11,lat:43.3010,lng:76.9450,cat:"weapons",risk:72,name:"Переделанное оружие",loc:"Турксибский р-н",ds:"Травматы под боевой, связь через Session."},
+{id:12,lat:43.2180,lng:76.9430,cat:"drugs",risk:78,name:"Закладки (опт)",loc:"Эспланада",net:"СЕТЬ ALPHA",ds:"Оптовая точка alm_chemist, даркнет-форум."},
+{id:13,lat:43.2640,lng:76.9420,cat:"counterfeit",risk:34,name:"Реплики люкс",loc:"Барахолка",ds:"Поддельные LV/Gucci/Rolex, Kaspi-рассрочка."},
+{id:14,lat:43.2280,lng:76.8650,cat:"drugs",risk:58,name:"Каннабис закладки",loc:"Ауэзовский р-н",ds:"«Бошки», прикоп, фото места после оплаты."},
+{id:15,lat:43.2080,lng:76.9450,cat:"money_mule",risk:64,name:"Дропы Kaspi/Halyk",loc:"Бостандык, Самал",ds:"Карты для приёма платежей, 10% дропу."},
+{id:16,lat:43.2450,lng:76.8950,cat:"pii_leak",risk:70,name:"Продажа базы карт РК",loc:"Центр",ds:"Kaspi/Halyk карты с CVV, пробив по ИИН."},
+{id:17,lat:43.1900,lng:76.8800,cat:"drugs",risk:52,name:"Псих. вещества «для вечеринок»",loc:"Наурызбайский р-н",ds:"Закись азота + грибы под заказ."},
+{id:18,lat:43.2700,lng:76.9300,cat:"vapes",risk:42,name:"Опт вейпов",loc:"мкр Жетысу",ds:"Опт от 50 шт, у школ «не палятся»."},
+{id:19,lat:43.2150,lng:76.9250,cat:"drugs",risk:50,name:"Рецептурка без рецепта",loc:"Бостандык",ds:"Прегабалин/трамадол упаковками, без рецепта."},
+{id:20,lat:43.2510,lng:76.9400,cat:"drugs",risk:65,name:"Закладки экстази",loc:"Жетысуский р-н",ds:"MDMA/«колёса», оплата BTC/USDT."}
+];
+CAT.alcohol={ic:"🍾",ru:"Алкоголь",col:"#7c3aed"};
+
+const riskCol=(r)=>r>=80?"#c2384a":r>=55?"#b07000":"#2f8a5b";
+let activeCat=null, markers={}, map;
+
+document.getElementById('st-pts').textContent=HOTSPOTS.length;
+document.getElementById('st-hi').textContent=HOTSPOTS.filter(h=>h.risk>=80).length;
+document.getElementById('st-net').textContent=new Set(HOTSPOTS.filter(h=>h.net).map(h=>h.net)).size;
+document.getElementById('lcount').textContent=HOTSPOTS.length;
+
+function initMap(){
+  map=L.map('map',{zoomControl:true,attributionControl:true}).setView([43.235,76.915],12.4);
+  L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png',{
+    attribution:'© OpenStreetMap © CARTO',subdomains:'abcd',maxZoom:19
+  }).addTo(map);
+  // heat
+  const heat=HOTSPOTS.map(h=>[h.lat,h.lng,h.risk/100]);
+  L.heatLayer(heat,{radius:38,blur:28,maxZoom:14,gradient:{0.2:'#2f8a5b',0.5:'#b07000',0.8:'#c2384a',1:'#8a1020'}}).addTo(map);
+  // markers
+  HOTSPOTS.forEach(h=>{
+    const c=CAT[h.cat]||{ic:'❓',col:'#888',ru:'?'};
+    const m=L.circleMarker([h.lat,h.lng],{radius:6+(h.risk/100)*8,color:'#fff',weight:2,fillColor:riskCol(h.risk),fillOpacity:.9});
+    m.bindPopup(`<div class="pop"><div class="pt"><span class="psc" style="color:${riskCol(h.risk)}">${h.risk}</span><span class="badge" style="color:${c.col};border-color:${c.col}55">${c.ic} ${c.ru}</span></div>
+      <div class="pnm">${h.name}</div><div class="pco">📍 ${h.loc}${h.net?' · <b style="color:#c2384a">'+h.net+'</b>':''} · ${h.lat.toFixed(4)},${h.lng.toFixed(4)}</div>
+      <div class="pds">${h.ds}</div>
+      ${h.wallet?`<a class="trace" href="trace.html">💰 Проследить деньги на блокчейне →</a>`:''}</div>`,{maxWidth:280});
+    m.addTo(map); markers[h.id]=m;
+  });
+  renderList(); renderFilters();
+}
+
+function renderFilters(){
+  const cats=[...new Set(HOTSPOTS.map(h=>h.cat))];
+  const f=document.getElementById('filters');
+  f.innerHTML=`<span class="fb ${activeCat===null?'on':''}" data-c="">Все</span>`+cats.map(c=>`<span class="fb ${activeCat===c?'on':''}" data-c="${c}">${CAT[c].ic} ${CAT[c].ru}</span>`).join('');
+  f.querySelectorAll('.fb').forEach(b=>b.onclick=()=>{activeCat=b.dataset.c||null;renderFilters();renderList();applyFilter();});
+}
+function applyFilter(){ HOTSPOTS.forEach(h=>{ const show=!activeCat||h.cat===activeCat; const m=markers[h.id]; if(m){ if(show)m.addTo(map); else map.removeLayer(m); } }); }
+function renderList(){
+  const list=document.getElementById('hlist');
+  const items=[...HOTSPOTS].filter(h=>!activeCat||h.cat===activeCat).sort((a,b)=>b.risk-a.risk);
+  list.innerHTML=items.map(h=>{const c=CAT[h.cat];return `<div class="hcard" data-id="${h.id}"><div class="ht"><span class="sc" style="color:${riskCol(h.risk)}">${h.risk}</span><span class="ic">${c.ic}</span><span class="nm">${h.name}</span><span class="loc">${h.loc.split(',')[0].slice(0,14)}</span></div><div class="ds">${h.ds}</div></div>`;}).join('');
+  list.querySelectorAll('.hcard').forEach(el=>el.onclick=()=>{const h=HOTSPOTS.find(x=>x.id==el.dataset.id);map.flyTo([h.lat,h.lng],15,{duration:.8});markers[h.id].openPopup();list.querySelectorAll('.hcard').forEach(x=>x.classList.remove('active'));el.classList.add('active');});
+}
+document.getElementById('legend').innerHTML=`<span><i style="background:#c2384a"></i>высокий риск (80+)</span><span><i style="background:#b07000"></i>средний (55–79)</span><span><i style="background:#2f8a5b"></i>низкий</span><span style="color:var(--risk);margin-top:3px">🔥 тепло = плотность угроз</span>`;
+
+if(window.L){initMap();} else {window.addEventListener('load',initMap);}
+</script>
+</body>
+</html>
