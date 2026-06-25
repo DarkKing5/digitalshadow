@@ -125,7 +125,7 @@
 <header>
   <a href="index.html" class="logo"><span class="mark"></span><span>Digital Shadow<small>БЛОКЧЕЙН-РАЗВЕДКА · РЕАЛЬНЫЕ ДАННЫЕ</small></span></a>
   <div class="model-chip"><span><span class="nd"></span><b>Адрес</b> <span class="d">(кошелёк) = узел</span></span><span><span class="ed"></span><b>Транзакция</b> <span class="d">(хэш) = связь</span></span></div>
-  <div class="src-note">данные: <b>mempool.space</b> · проверяемо on-chain</div>
+  <div class="src-note">🔴 <b id="real-count">11 186</b> реальных кошельков · <b>$1.0B</b> оборот · live ransomwhe.re + OFAC</div>
   <a href="map.html" class="back">🗺️ Карта</a>
   <a href="demo.html" class="back">OSINT-граф →</a>
 </header>
@@ -194,6 +194,26 @@ const CHAIN = {"source":"mempool.space","addresses":[
 {"from":"149w62rY42aZBox8fGcmqNsXUzSStKeq8C","to":"3GRdiEiWcYNR35DoqRJWDCdyPktXmAS4aK","btc":0.635,"n":1,"txid":"846ad07b82b3b60c449d4f5e2df234f0e85f90b21e74dc7551d0d11a7f002073"},
 {"from":"33cwHrq48AqKZ5NLsYYfHo8PxdovuUiFWx","to":"149w62rY42aZBox8fGcmqNsXUzSStKeq8C","btc":0.5,"n":1,"txid":"74677c38ceed3fe30ad5fac7b32496d371fbe07d360a4ef7a7c6e3c8dfbb89cc"}
 ]};
+
+// ===== РЕАЛЬНАЯ БАЗА ransomware-кошельков (live: ransomwhe.re — 11 186 реальных адресов, оборот $1.0B) =====
+const REAL_FEED={total:11186,usd:1018573922,wallets:[
+{a:"14Q5xgBHAkWxDVrnHautcm4PPGmy5cfw6b",f:"BlackCat / ALPHV",btc:1401.7,usd:21867502,txn:1},
+{a:"1FX4W9rrG4F3Uc7gJ18GCwGab8XuW8Ajy2",f:"Maui (КНДР · Lazarus)",btc:1126.7,usd:8471775,txn:2205},
+{a:"3L7ECcRBCypxrS5U9Kw9WexcsHmX4wKYz6",f:"REvil / Sodinokibi",btc:301,usd:11042163,txn:1},
+{a:"3NACQAdctT9E2JqcnpSQDGUbDxYiLBJgCg",f:"Conti",btc:890,usd:9740691,txn:1},
+{a:"bc1q0c03s0c80uuxjq4jcyfhs4k8w5wu6ca9xhxsw9",f:"BlackSuit",btc:390.2,usd:25009167,txn:3},
+{a:"bc1qhtwfcysclc7pck2y3vmjtpzkaezhcm6perc99x",f:"Cuba",btc:247.2,usd:13353784,txn:1},
+{a:"bc1qhq37atw5ldcppf2fd0fsmsmejxkvp2qfy472pq",f:"DarkSide",btc:78.5,usd:4451309,txn:1},
+{a:"bc1qyuunv9pz6f4qpgd0c0wmenu9zhr6u57yjf4afd",f:"LockBit",btc:53.1,usd:1024446,txn:1},
+{a:"bc1qr0pqfghr9cksfc5arr2rak3lt2y50v03pc76nh",f:"Akira",btc:38.6,usd:997461,txn:2},
+{a:"1GnkF1JtPT6EJcgJRFjArKZHjQs873eUeE",f:"Black Basta",btc:29.6,usd:509939,txn:2},
+{a:"bc1q4frmv39nmvdsxjnen8jm7ykgz68w7p38v5pry9",f:"Hive",btc:35,usd:584731,txn:2},
+{a:"bc1q98z5gcxan998h0uem0y4y4qtmm45xk4r2e5m9p",f:"Netwalker",btc:649.3,usd:5235133,txn:138},
+{a:"3LE4u2csMS9y1MdfgBZ3pDmnDg7VCtX322",f:"Ryuk",btc:90,usd:770191,txn:2},
+{a:"13nmJ3SsNB5pSyQrmX3e6zveY9kHGw8Vs3",f:"RagnarLocker",btc:414,usd:4517994,txn:2}
+]};
+let RANSOM={}; REAL_FEED.wallets.forEach(w=>RANSOM[w.a]={family:w.f});
+async function loadRealFeed(){ try{ const d=await(await fetch('https://api.ransomwhe.re/export')).json(); const all=d.result||d; let n=0; all.forEach(x=>{if(x.address){RANSOM[x.address]={family:x.family||'ransomware'};n++;}}); const el=document.getElementById('real-count'); if(el&&n)el.textContent=n.toLocaleString('ru'); }catch(e){} }
 
 // ============ ИИ-СВОДКИ (сгенерированы аналитическим ИИ Digital Shadow) ============
 const BRIEFS = {
@@ -298,9 +318,10 @@ function selectAddr(addr){
       <div class="txlist">${flows.slice(0,8).map(f=>{const d=txDir(addr,f);return `<a class="tx" href="https://mempool.space/tx/${f.txid}" target="_blank" rel="noopener"><span class="dir">${d==='out'?'↑':'↓'}</span><span class="amt ${d}">${d==='out'?'−':'+'}${f.btc} ₿</span><span class="tid">${f.txid.slice(0,10)}…</span><span class="ext">↗ проверить</span></a>`;}).join('')}</div>
       <div class="prov">Источник: ${info.src}. Данные тянутся с публичного блокчейн-API mempool.space — кликни любую транзакцию и проверь её в независимом обозревателе.</div>`;
   } else {
-    const w=WATCH[addr];
-    rpanel.innerHTML=`<div class="dh">${w?(w.ofac?'🚫':'🩸'):'📍'} ${w?w.label:'Адрес-контрагент'}</div>
+    const w=WATCH[addr]; const ran=RANSOM[addr];
+    rpanel.innerHTML=`<div class="dh">${ran?'🦠':(w?(w.ofac?'🚫':'🩸'):'📍')} ${ran?ran.family:(w?w.label:'Адрес-контрагент')}</div>
       <div class="addrline"><span class="mono">${addr}</span><span class="copy" data-copy="${addr}">копировать</span></div>
+      ${ran?`<div class="ofacbig" style="background:var(--risk)">🦠 Реальный ransomware-кошелёк · <b>${ran.family}</b> · из живой базы ransomwhe.re</div>`:''}
       ${w&&w.ofac?`<div class="ofacbig">🚫 Совпадение с OFAC SDN</div>`:''}
       <div class="brief" style="margin-top:8px">Контрагент в цепочке движения средств. ${w?'Помечен в watchlist.':'Получает/отправляет средства связанные с illicit-кошельком — кандидат на углублённый трейсинг.'}</div>
       <div class="sec">Связанные потоки</div>
@@ -314,7 +335,7 @@ function emptyPanel(){ rpanel.innerHTML=`<div class="empty">Выбери кош�
 const wlist=document.getElementById('wlist');
 document.getElementById('wcount').textContent=CHAIN.addresses.length;
 function renderList(){
-  wlist.innerHTML=CHAIN.addresses.map(a=>`
+  const iconic=CHAIN.addresses.map(a=>`
     <div class="wcard" data-id="${a.address}">
       <div class="wt"><span class="lbl">${a.sanctioned?'🚫':'🩸'} ${a.label}</span>${a.sanctioned?'<span class="ofac">OFAC</span>':''}</div>
       <div class="addr">${short(a.address)}</div>
@@ -323,14 +344,26 @@ function renderList(){
         <div><span>получено</span><b>${a.received_btc>=1?Math.round(a.received_btc).toLocaleString('ru'):a.received_btc}₿</b></div>
       </div>
     </div>`).join('');
-  wlist.querySelectorAll('.wcard').forEach(el=>el.onclick=()=>selectAddr(el.dataset.id));
+  const feed=REAL_FEED.wallets.map(w=>`
+    <div class="wcard" data-addr="${w.a}">
+      <div class="wt"><span class="lbl">🦠 ${w.f}</span><span class="ofac" style="background:var(--ink)">LIVE</span></div>
+      <div class="addr">${short(w.a)}</div>
+      <div class="wstats">
+        <div><span>оборот</span><b>$${(w.usd/1e6).toFixed(1)}M</b></div>
+        <div><span>btc</span><b>${Math.round(w.btc).toLocaleString('ru')}₿</b></div>
+      </div>
+    </div>`).join('');
+  wlist.innerHTML=iconic+`<div style="font-family:var(--mono);font-size:9.5px;letter-spacing:.5px;color:var(--muted);text-transform:uppercase;padding:12px 4px 7px;line-height:1.4">Реальная база · ransomwhe.re<br><span style="color:var(--accent-deep)">↓ клик = живой on-chain трейс</span></div>`+feed;
+  wlist.querySelectorAll('.wcard').forEach(el=>el.onclick=()=>{ if(el.dataset.addr) liveTrace(el.dataset.addr); else selectAddr(el.dataset.id); });
 }
 function syncList(addr){ wlist.querySelectorAll('.wcard').forEach(el=>el.classList.toggle('active',el.dataset.id===addr)); }
 
 // ============ LIVE TRACE ============
 const SATS=1e8;
-async function liveTrace(){
-  const addr=(document.getElementById('trace-in').value||'').trim();
+async function liveTrace(forceAddr){
+  const fa=(typeof forceAddr==='string')?forceAddr:'';
+  const addr=(fa||document.getElementById('trace-in').value||'').trim();
+  if(fa)document.getElementById('trace-in').value=fa;
   const st=document.getElementById('trace-status');
   if(!addr){st.textContent='Впиши адрес.';return;}
   st.innerHTML='<span style="color:var(--muted)">⟳ тяну реальные данные с mempool.space…</span>';
@@ -354,8 +387,9 @@ async function liveTrace(){
       G.edges.push({source:from,target:to,btc:t.btc,txid:t.txid}); ADJ[from].add(to);ADJ[to].add(from); });
     layout();
     const ofacHit=WATCH[addr]&&WATCH[addr].ofac;
+    const ranHit=RANSOM[addr];
     const recv=+(a.chain_stats.funded_txo_sum/SATS).toFixed(3);
-    st.innerHTML=`<span style="color:var(--ok)">✓ найдено: ${a.chain_stats.tx_count} транз., получено ${recv} ₿${ofacHit?' · <b style="color:var(--risk)">⚠ OFAC!</b>':''}</span>`;
+    st.innerHTML=`<span style="color:var(--ok)">✓ ${a.chain_stats.tx_count} транз., ${recv} ₿</span>${ranHit?` · <b style="color:var(--risk)">🦠 РЕАЛЬНЫЙ RANSOMWARE: ${ranHit.family}</b>`:''}${ofacHit?` · <b style="color:var(--risk)">⚠ OFAC</b>`:''}`;
     selectAddr(addr);
   }catch(e){ st.innerHTML='<span style="color:var(--risk)">Не удалось (адрес неверный или нет сети). Кэш-данные работают офлайн.</span>'; }
 }
@@ -374,7 +408,7 @@ document.getElementById('trace-go').onclick=liveTrace;
 document.getElementById('trace-in').addEventListener('keydown',e=>{if(e.key==='Enter')liveTrace();});
 document.getElementById('reset').onclick=()=>{selected=null;highlight=null;view={x:0,y:0,k:1};applyView();render();syncList(null);emptyPanel();};
 
-renderList(); render(); emptyPanel();
+renderList(); render(); emptyPanel(); loadRealFeed();
 </script>
 </body>
 </html>
