@@ -214,6 +214,9 @@ const REAL_FEED={total:11186,usd:1018573922,wallets:[
 ]};
 let RANSOM={}; REAL_FEED.wallets.forEach(w=>RANSOM[w.a]={family:w.f});
 async function loadRealFeed(){ try{ const d=await(await fetch('https://api.ransomwhe.re/export')).json(); const all=d.result||d; let n=0; all.forEach(x=>{if(x.address){RANSOM[x.address]={family:x.family||'ransomware'};n++;}}); const el=document.getElementById('real-count'); if(el&&n)el.textContent=n.toLocaleString('ru'); }catch(e){} }
+// Живая сверка с ПОЛНЫМ санкционным списком OFAC (518 BTC + 93 ETH + 50 TRX реальных адресов)
+let OFAC_LIVE={};
+async function loadOFAC(){ try{ for(const L of ['XBT','ETH','TRX']){ const t=await(await fetch('https://raw.githubusercontent.com/0xB10C/ofac-sanctioned-digital-currency-addresses/lists/sanctioned_addresses_'+L+'.txt')).text(); t.split('\n').forEach(a=>{a=a.trim();if(a&&!a.startsWith('#'))OFAC_LIVE[a]=true;}); } const el=document.getElementById('ofac-count'); if(el)el.textContent=Object.keys(OFAC_LIVE).length; }catch(e){} }
 
 // ============ ИИ-СВОДКИ (сгенерированы аналитическим ИИ Digital Shadow) ============
 const BRIEFS = {
@@ -386,7 +389,7 @@ async function liveTrace(forceAddr){
       const from=t.dir==='out'?addr:t.cp, to=t.dir==='out'?t.cp:addr;
       G.edges.push({source:from,target:to,btc:t.btc,txid:t.txid}); ADJ[from].add(to);ADJ[to].add(from); });
     layout();
-    const ofacHit=WATCH[addr]&&WATCH[addr].ofac;
+    const ofacHit=(WATCH[addr]&&WATCH[addr].ofac)||OFAC_LIVE[addr];
     const ranHit=RANSOM[addr];
     const recv=+(a.chain_stats.funded_txo_sum/SATS).toFixed(3);
     st.innerHTML=`<span style="color:var(--ok)">✓ ${a.chain_stats.tx_count} транз., ${recv} ₿</span>${ranHit?` · <b style="color:var(--risk)">🦠 РЕАЛЬНЫЙ RANSOMWARE: ${ranHit.family}</b>`:''}${ofacHit?` · <b style="color:var(--risk)">⚠ OFAC</b>`:''}`;
@@ -408,7 +411,7 @@ document.getElementById('trace-go').onclick=liveTrace;
 document.getElementById('trace-in').addEventListener('keydown',e=>{if(e.key==='Enter')liveTrace();});
 document.getElementById('reset').onclick=()=>{selected=null;highlight=null;view={x:0,y:0,k:1};applyView();render();syncList(null);emptyPanel();};
 
-renderList(); render(); emptyPanel(); loadRealFeed();
+renderList(); render(); emptyPanel(); loadRealFeed(); loadOFAC();
 </script>
 </body>
 </html>
